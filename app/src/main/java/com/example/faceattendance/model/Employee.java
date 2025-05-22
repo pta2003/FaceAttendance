@@ -13,15 +13,24 @@ public class Employee {
     @NonNull
     private String employeeId;
 
+    private String employeeName;
+
     private float[] faceEmbedding;
 
     private String registrationDate;
 
-    public Employee(@NonNull String employeeId, float[] faceEmbedding, String registrationDate) {
+    public Employee(@NonNull String employeeId, String employeeName, float[] faceEmbedding, String registrationDate) {
         this.employeeId = employeeId;
+        this.employeeName = employeeName;
         this.faceEmbedding = faceEmbedding;
         this.registrationDate = registrationDate;
     }
+
+//    public Employee(@NonNull String employeeId, float[] faceEmbedding, String registrationDate) {
+//        this.employeeId = employeeId;
+//        this.faceEmbedding = faceEmbedding;
+//        this.registrationDate = registrationDate;
+//    }
 
     @NonNull
     public String getEmployeeId() {
@@ -42,6 +51,14 @@ public class Employee {
 
     public String getRegistrationDate() {
         return registrationDate;
+    }
+
+    public String getEmployeeName() {
+        return employeeName;
+    }
+
+    public void setEmployeeName(String employeeName) {
+        this.employeeName = employeeName;
     }
 
     public void setRegistrationDate(String registrationDate) {

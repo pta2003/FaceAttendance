@@ -47,7 +47,7 @@ public class AddEmployeeActivity extends AppCompatActivity {
 
     private PreviewView previewView;
     private TextView statusTextView;
-    private EditText employeeIdEditText;
+    private EditText employeeNameEditText;
     private Button captureButton;
     private Button backButton;
 
@@ -69,7 +69,7 @@ public class AddEmployeeActivity extends AppCompatActivity {
 
         previewView = findViewById(R.id.previewView);
         statusTextView = findViewById(R.id.statusTextView);
-        employeeIdEditText = findViewById(R.id.employeeIdEditText);
+        employeeNameEditText = findViewById(R.id.employeeNameEditText);
         captureButton = findViewById(R.id.captureButton);
         backButton = findViewById(R.id.backButton);
 
@@ -88,6 +88,7 @@ public class AddEmployeeActivity extends AppCompatActivity {
 
         faceDatabase = Room.databaseBuilder(getApplicationContext(),
                         FaceDatabase.class, "face_attendance_db")
+                .fallbackToDestructiveMigration()
                 .allowMainThreadQueries()
                 .build();
 
@@ -182,9 +183,9 @@ public class AddEmployeeActivity extends AppCompatActivity {
     }
 
     private void captureAndRegisterFace() {
-        String employeeId = employeeIdEditText.getText().toString().trim();
-        if (employeeId.isEmpty()) {
-            Toast.makeText(this, "Please enter an employee ID", Toast.LENGTH_SHORT).show();
+        String employeeName = employeeNameEditText.getText().toString().trim();
+        if (employeeName.isEmpty()) {
+            Toast.makeText(this, "Please enter employee name", Toast.LENGTH_SHORT).show();
             return;
         }
 
@@ -205,27 +206,28 @@ public class AddEmployeeActivity extends AppCompatActivity {
             return;
         }
 
-        String currentDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-        Employee employee = new Employee(employeeId, faceEmbedding, currentDate);
+        // Tạo ID ngẫu nhiên
+        String employeeId = "EMP" + System.currentTimeMillis();
 
-        Employee existingEmployee = faceDatabase.employeeDao().getEmployeeById(employeeId);
-        if (existingEmployee != null) {
-            Toast.makeText(this, "Updating existing employee record", Toast.LENGTH_SHORT).show();
-        }
+        String currentDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
+        Employee employee = new Employee(employeeId,employeeName, faceEmbedding, currentDate);
+//        employee.setEmployeeName(employeeName); // Bạn cần thêm trường "name" vào class Employee nếu chưa có
 
         faceDatabase.employeeDao().insertEmployee(employee);
 
         Toast.makeText(this, "Employee registered successfully", Toast.LENGTH_LONG).show();
-        updateStatus("Employee " + employeeId + " registered!");
+        updateStatus("Employee " + employeeName + " registered!");
 
-        employeeIdEditText.setText("");
+        employeeNameEditText.setText("");
 
         statusTextView.postDelayed(() -> {
             isCapturing = false;
             livenessDetector.reset();
             updateStatus("Ready for next registration. Position face within the oval.");
+            finish();
         }, 2000);
     }
+
 
     private void updateStatus(String message) {
         runOnUiThread(() -> statusTextView.setText(message));

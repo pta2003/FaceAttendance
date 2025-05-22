@@ -49,9 +49,10 @@ class Converters {
 /**
  * Room database for the application
  */
-@Database(entities = {Employee.class,AttendanceLog.class}, version = 2, exportSchema = false)
+@Database(entities = {Employee.class,AttendanceLog.class,Admin.class}, version = 1, exportSchema = false)
 @TypeConverters({Converters.class})
 public abstract class FaceDatabase extends RoomDatabase {
     public abstract EmployeeDao employeeDao();
     public abstract AttendanceLogDao attendanceLogDao();
+    public abstract AdminDao adminDao();
 }

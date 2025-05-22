@@ -110,6 +110,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
 
         faceDatabase = Room.databaseBuilder(getApplicationContext(),
                         FaceDatabase.class, "face_attendance_db")
+                .fallbackToDestructiveMigration()
                 .allowMainThreadQueries()
                 .build();
 
@@ -243,6 +244,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
         }
 
         String matchedEmployeeId = null;
+        String matchedEmployeeName = null;
         Employee matchedEmployee = null;
         float bestSimilarity = 0;
 
@@ -251,7 +253,8 @@ public class FaceDetectionActivity extends AppCompatActivity {
             if (similarity > bestSimilarity) {
                 bestSimilarity = similarity;
                 matchedEmployeeId = employee.getEmployeeId();
-                matchedEmployee = employee;
+                matchedEmployeeName = employee.getEmployeeName();
+                //matchedEmployee = employee;
             }
         }
 
@@ -266,6 +269,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
             JSONObject json = new JSONObject();
             try {
                 json.put("employeeId", matchedEmployeeId);
+                json.put("employeeName",matchedEmployeeName);
                 json.put("timestamp", currentTime);
                 json.put("faceBase64", base64Image);
             } catch (Exception e) {
@@ -273,6 +277,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
             }
 
             final String employeeIdFinal = matchedEmployeeId;
+            final String employeeNameFinal = matchedEmployeeName;
             final String timeFinal = currentTime;
             final String imageFinal = base64Image;
 
@@ -288,6 +293,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
                     Log.e(TAG, "MQTT send failed, saving log", e);
                     AttendanceLog log = new AttendanceLog(
                             employeeIdFinal,
+                            employeeNameFinal,
                             timeFinal,
                             imageFinal,
                             false
@@ -297,7 +303,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
             });
 
 
-            updateStatus("Attendance recorded for employee " + matchedEmployeeId + " at " + currentTime);
+            updateStatus("Attendance recorded for employee " + matchedEmployeeName + "(ID: " + matchedEmployeeId + " ) at " + currentTime);
         } else {
             updateStatus("Face not recognized. Please register or try again.");
         }
@@ -305,7 +311,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
 
         currentState = DetectionState.COMPLETED;
         returnToMainRunnable = this::finish;
-        handler.postDelayed(returnToMainRunnable, 5000);
+        handler.postDelayed(returnToMainRunnable, 2000);
     }
 
 
