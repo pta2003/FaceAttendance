@@ -23,8 +23,11 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.room.Room;
 
+import com.example.faceattendance.model.AttendanceLog;
 import com.example.faceattendance.model.Employee;
 import com.example.faceattendance.model.FaceDatabase;
+import com.example.faceattendance.mqtt.MqttCallbackListener;
+import com.example.faceattendance.mqtt.MqttManager;
 import com.example.faceattendance.utils.FaceRecognitionHelper;
 import com.example.faceattendance.utils.LivenessDetector;
 import com.example.faceattendance.utils.YuvToRgbConverter;
@@ -35,6 +38,9 @@ import com.google.mlkit.vision.face.FaceDetection;
 import com.google.mlkit.vision.face.FaceDetector;
 import com.google.mlkit.vision.face.FaceDetectorOptions;
 
+import org.json.JSONObject;
+
+import java.io.ByteArrayOutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
@@ -209,11 +215,49 @@ public class AddEmployeeActivity extends AppCompatActivity {
         // Tạo ID ngẫu nhiên
         String employeeId = "EMP" + System.currentTimeMillis();
 
-        String currentDate = new SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(new Date());
-        Employee employee = new Employee(employeeId,employeeName, faceEmbedding, currentDate);
-//        employee.setEmployeeName(employeeName); // Bạn cần thêm trường "name" vào class Employee nếu chưa có
+        String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                .format(new Date());
+        //Employee employee = new Employee(employeeId,employeeName, faceEmbedding, currentDate);
+        //lấy ảnh base64
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        faceBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+        String base64Image = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
+        // Tạo ID ngẫu nhiên
+        String id = "LOG" + System.currentTimeMillis();
+        JSONObject json = new JSONObject();//id,deviceId,employeeId,employeeName,faceEmbedding,timestamp
+        try {
+            json.put("id",id);
+            json.put("deviceId",MainActivity.DEVICE_ID);
+            json.put("employeeId", employeeId);
+            json.put("employeeName",employeeName);
+            json.put("faceEmbedding", faceEmbedding);
+            json.put("timestamp", currentTime);
+        } catch (Exception e) {
+            Log.e("MQTT_JSON", "JSON creation failed", e);
+        }
 
-        faceDatabase.employeeDao().insertEmployee(employee);
+        final String employeeIdFinal = employeeId;
+        final String employeeNameFinal = employeeName;
+        final String timeFinal = currentTime;
+        final String imageFinal = base64Image;
+
+        MqttManager mqttManager = new MqttManager();
+        String topic = "attendance/add_employee";
+
+        mqttManager.connectAndSend(topic, json.toString(), new MqttCallbackListener() {
+            @Override
+            public void onSendSuccess() {
+                Log.d(TAG, "MQTT send add_employee success");
+            }
+            @Override
+            public void onSendFailure(Exception e) {
+                Log.e(TAG, "MQTT send add_employee failed", e);
+            }
+        });
+
+        //String employeeId, String employeeName, float[] faceEmbedding, String registrationDate, String faceBase64
+        Employee employee = new Employee(employeeIdFinal, employeeNameFinal, faceEmbedding, timeFinal, imageFinal);
+        faceDatabase.employeeDao().insert(employee);
 
         Toast.makeText(this, "Employee registered successfully", Toast.LENGTH_LONG).show();
         updateStatus("Employee " + employeeName + " registered!");

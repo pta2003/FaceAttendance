@@ -16,12 +16,21 @@ import androidx.room.Room;
 import com.example.faceattendance.model.FaceDatabase;
 
 public class MainActivity extends AppCompatActivity {
+    public static final String DEVICE_ID = "DEVICE_123";
     private static final int CAMERA_PERMISSION_REQUEST_CODE = 100;
+    private static final int LOGIN_REQUEST_CODE = 101;
     private static final String[] REQUIRED_PERMISSIONS = {
             Manifest.permission.CAMERA
     };
 
     private FaceDatabase faceDatabase;
+
+    private boolean isLoggedIn = false;
+    private String adminId = "";
+
+    private Button startAttendanceButton;
+    private Button ManageButton;
+    private Button btnLogin;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -31,15 +40,17 @@ public class MainActivity extends AppCompatActivity {
         // Initialize database
         faceDatabase = Room.databaseBuilder(getApplicationContext(),
                         FaceDatabase.class, "face_attendance_db")
-                .fallbackToDestructiveMigration() // reset nếu version thay đổi
-                .allowMainThreadQueries() // Just for simplicity, in production use AsyncTask or coroutines
+                .fallbackToDestructiveMigration()
+                .allowMainThreadQueries()
                 .build();
 
-        // Setup UI elements
-        Button startAttendanceButton = findViewById(R.id.startAttendanceButton);
-        Button addEmployeeButton = findViewById(R.id.addEmployeeButton);
+        // Setup UI
+        startAttendanceButton = findViewById(R.id.btnAttendance);
+        ManageButton = findViewById(R.id.btnManage);
+        btnLogin = findViewById(R.id.btnLogin);
 
-        // Set click listeners
+        updateUIState();
+
         startAttendanceButton.setOnClickListener(v -> {
             if (checkCameraPermission()) {
                 startActivity(new Intent(MainActivity.this, FaceDetectionActivity.class));
@@ -48,26 +59,53 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-        addEmployeeButton.setOnClickListener(v -> {
-            if (checkCameraPermission()) {
-                startActivity(new Intent(MainActivity.this, AddEmployeeActivity.class));
+        ManageButton.setOnClickListener(v -> {
+            if (!isLoggedIn) {
+                Toast.makeText(this, "Vui lòng đăng nhập để truy cập chức năng này", Toast.LENGTH_SHORT).show();
+                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                startActivityForResult(intent, LOGIN_REQUEST_CODE);
+            } else if (checkCameraPermission()) {
+                startActivity(new Intent(MainActivity.this, AdminDashboardActivity.class));
             } else {
                 requestCameraPermission();
+            }
+        });
+
+        btnLogin.setOnClickListener(v -> {
+            if (!isLoggedIn) {
+                Intent intent = new Intent(MainActivity.this, LoginActivity.class);
+                startActivityForResult(intent, LOGIN_REQUEST_CODE);
             }
         });
     }
 
     /**
-     * Check if camera permission is granted
+     * Cập nhật UI theo trạng thái đăng nhập
      */
+    private void updateUIState() {
+        ManageButton.setEnabled(isLoggedIn);
+        ManageButton.setAlpha(isLoggedIn ? 1f : 0.5f);
+        btnLogin.setText(isLoggedIn ? "Admin: " + adminId : "Đăng nhập");
+    }
+
+    /**
+     * Nhận kết quả đăng nhập từ LoginActivity
+     */
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == LOGIN_REQUEST_CODE && resultCode == RESULT_OK) {
+            isLoggedIn = true;
+            adminId = data.getStringExtra("admin_id");
+            updateUIState();
+        }
+    }
+
     private boolean checkCameraPermission() {
         return ContextCompat.checkSelfPermission(this, Manifest.permission.CAMERA)
                 == PackageManager.PERMISSION_GRANTED;
     }
 
-    /**
-     * Request camera permission
-     */
     private void requestCameraPermission() {
         ActivityCompat.requestPermissions(this, REQUIRED_PERMISSIONS, CAMERA_PERMISSION_REQUEST_CODE);
     }

@@ -15,7 +15,7 @@ public class MqttManager {
     private static final String TAG = "MqttManager";
     private static final String BROKER_HOST = "broker.hivemq.com";
     private static final int BROKER_PORT = 1883;
-    private static final String TOPIC = "attendance/logs";
+    //private static final String TOPIC = "attendance/logs";
     private static final long TIMEOUT = 5 * 60 * 1000; // 5 phút
 
     private final Mqtt3AsyncClient mqttClient;
@@ -31,7 +31,7 @@ public class MqttManager {
                 .buildAsync();
     }
 
-    public void connectAndSend(String message, MqttCallbackListener listener) {
+    public void connectAndSend(String topic, String message, MqttCallbackListener listener) {
         if (!mqttClient.getState().isConnected()) {
             mqttClient.connectWith()
                     .keepAlive(60)
@@ -42,19 +42,19 @@ public class MqttManager {
                             if (listener != null) listener.onSendFailure((Exception) throwable);
                         } else {
                             Log.d(TAG, "MQTT connected");
-                            publish(message, listener);
+                            publish(topic, message, listener);
                             resetDisconnectTimer();
                         }
                     });
         } else {
-            publish(message, listener);
+            publish(topic, message, listener);
             resetDisconnectTimer();
         }
     }
 
-    private void publish(String message, MqttCallbackListener listener) {
+    private void publish(String topic, String message, MqttCallbackListener listener) {
         mqttClient.publishWith()
-                .topic(TOPIC)
+                .topic(topic)
                 .qos(MqttQos.AT_LEAST_ONCE)
                 .payload(message.getBytes(StandardCharsets.UTF_8))
                 .send()

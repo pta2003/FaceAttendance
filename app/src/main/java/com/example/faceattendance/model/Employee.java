@@ -19,12 +19,22 @@ public class Employee {
 
     private String registrationDate;
 
-    public Employee(@NonNull String employeeId, String employeeName, float[] faceEmbedding, String registrationDate) {
+    private String faceBase64;
+
+    public Employee(@NonNull String employeeId, String employeeName, float[] faceEmbedding, String registrationDate, String faceBase64) {
         this.employeeId = employeeId;
         this.employeeName = employeeName;
         this.faceEmbedding = faceEmbedding;
         this.registrationDate = registrationDate;
+        this.faceBase64 = faceBase64;
     }
+
+//    public Employee(@NonNull String employeeId, String employeeName, float[] faceEmbedding, String registrationDate) {
+//        this.employeeId = employeeId;
+//        this.employeeName = employeeName;
+//        this.faceEmbedding = faceEmbedding;
+//        this.registrationDate = registrationDate;
+//    }
 
 //    public Employee(@NonNull String employeeId, float[] faceEmbedding, String registrationDate) {
 //        this.employeeId = employeeId;
@@ -63,5 +73,11 @@ public class Employee {
 
     public void setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
+    }
+    public String getFaceBase64() {
+        return faceBase64;
+    }
+    public void setFaceBase64(String faceBase64) {
+        this.faceBase64 = faceBase64;
     }
 }

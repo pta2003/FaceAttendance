@@ -1,7 +1,7 @@
 package com.example.faceattendance;
 
 import android.annotation.SuppressLint;
-import android.content.Intent;
+
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.ImageFormat;
@@ -245,7 +245,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
 
         String matchedEmployeeId = null;
         String matchedEmployeeName = null;
-        Employee matchedEmployee = null;
+        //Employee matchedEmployee = null;
         float bestSimilarity = 0;
 
         for (Employee employee : employees) {
@@ -258,16 +258,19 @@ public class FaceDetectionActivity extends AppCompatActivity {
             }
         }
 
-        if (matchedEmployeeId != null && bestSimilarity > 0.7) {
+        if (matchedEmployeeId != null && bestSimilarity > 0.6) {
             String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                     .format(new Date());
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
             faceBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
             String base64Image = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
-
-            JSONObject json = new JSONObject();
+            // Tạo ID ngẫu nhiên
+            String logId = "LOG" + System.currentTimeMillis();
+            JSONObject json = new JSONObject();//logId,employeeId,employeeName,timestamp,faceBase64
             try {
+                json.put("id",logId);
+                json.put("deviceId",MainActivity.DEVICE_ID);
                 json.put("employeeId", matchedEmployeeId);
                 json.put("employeeName",matchedEmployeeName);
                 json.put("timestamp", currentTime);
@@ -275,23 +278,35 @@ public class FaceDetectionActivity extends AppCompatActivity {
             } catch (Exception e) {
                 Log.e("MQTT_JSON", "JSON creation failed", e);
             }
-
+            final String logIdFinal = logId;
             final String employeeIdFinal = matchedEmployeeId;
             final String employeeNameFinal = matchedEmployeeName;
             final String timeFinal = currentTime;
             final String imageFinal = base64Image;
 
             MqttManager mqttManager = new MqttManager();
-            mqttManager.connectAndSend(json.toString(), new MqttCallbackListener() {
+            String topic = "attendance/logs";
+            mqttManager.connectAndSend(topic, json.toString(), new MqttCallbackListener() {
                 @Override
                 public void onSendSuccess() {
+                    //String logId,String employeeId,String employeeName, String timestamp, String faceBase64, boolean isSynced
                     Log.d(TAG, "MQTT send success");
+                    AttendanceLog log = new AttendanceLog(
+                            logIdFinal,
+                            employeeIdFinal,
+                            employeeNameFinal,
+                            timeFinal,
+                            imageFinal,
+                            true
+                    );
+                    faceDatabase.attendanceLogDao().insert(log);
                 }
 
                 @Override
                 public void onSendFailure(Exception e) {
                     Log.e(TAG, "MQTT send failed, saving log", e);
                     AttendanceLog log = new AttendanceLog(
+                            logIdFinal,
                             employeeIdFinal,
                             employeeNameFinal,
                             timeFinal,

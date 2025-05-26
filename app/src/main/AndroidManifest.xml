@@ -33,6 +33,26 @@
             android:name=".AddEmployeeActivity"
             android:exported="true">
         </activity>
+        <activity
+            android:name=".LoginActivity"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".AdminDashboardActivity"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".ManageEmployeesActivity"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".EmployeeDetailActivity"
+            android:exported="true">
+        </activity>
+        <activity
+            android:name=".AttendanceHistoryActivity"
+            android:exported="true">
+        </activity>
     </application>
 
 </manifest>

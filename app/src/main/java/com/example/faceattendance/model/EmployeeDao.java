@@ -11,11 +11,12 @@ import java.util.List; /**
 @Dao
 public interface EmployeeDao {
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    void insertEmployee(Employee employee);
+    void insert(Employee employee);
 
     @Query("SELECT * FROM employees")
     List<Employee> getAllEmployees();
 
     @Query("SELECT * FROM employees WHERE employeeId = :employeeId")
     Employee getEmployeeById(String employeeId);
+
 }

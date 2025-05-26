@@ -69,5 +69,7 @@ dependencies {
     annotationProcessor("androidx.room:room-compiler:${roomVersion}")
 
     implementation("com.hivemq:hivemq-mqtt-client:1.3.0")
+    implementation("androidx.recyclerview:recyclerview:1.3.2")
+    implementation("androidx.cardview:cardview:1.0.0")
 
 }
