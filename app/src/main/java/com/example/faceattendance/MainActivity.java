@@ -89,7 +89,7 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
-        new PinInputDialog(this, "Nhập mã PIN quản trị", 6)
+        new PinInputDialog(this, "Nhập mã PIN admin", 6)
                 .setListener(new PinInputDialog.PinInputListener() {
                     @Override
                     public void onPinEntered(String pin) {

@@ -7,6 +7,7 @@ import android.text.InputType;
 import android.text.method.TransformationMethod;
 import android.view.Gravity;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.LinearLayout;
 
@@ -69,6 +70,14 @@ public class PinInputDialog {
 
         builder.setPositiveButton("Xác nhận", (dialogInterface, which) -> {
             String enteredPin = getPinFromDigits(digits);
+            if (enteredPin.length() < pinLength) {
+                // Hiển thị thông báo lỗi và không đóng dialog
+                android.widget.Toast.makeText(context,
+                        "Vui lòng nhập đủ " + pinLength + " số",
+                        android.widget.Toast.LENGTH_SHORT).show();
+                // Không gọi listener và không đóng dialog
+                return;
+            }
             if (listener != null) {
                 listener.onPinEntered(enteredPin);
             }
@@ -81,11 +90,54 @@ public class PinInputDialog {
         });
 
         dialog = builder.create();
+
+        // Set flag để hiển thị bàn phím khi dialog show
+        dialog.getWindow().setSoftInputMode(
+                android.view.WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE
+        );
+
         dialog.show();
 
-        // Focus vào ô đầu tiên
+        // Override positive button để có thể kiểm soát việc đóng dialog
+        dialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(v -> {
+            String enteredPin = getPinFromDigits(digits);
+            if (enteredPin.length() < pinLength) {
+                // Hiển thị thông báo lỗi và không đóng dialog
+                android.widget.Toast.makeText(context,
+                        "Vui lòng nhập đủ " + pinLength + " số",
+                        android.widget.Toast.LENGTH_SHORT).show();
+
+                // Focus vào ô đầu tiên còn trống
+                for (int i = 0; i < pinLength; i++) {
+                    if (digits[i].getText().toString().isEmpty()) {
+                        digits[i].requestFocus();
+                        break;
+                    }
+                }
+                return; // Không đóng dialog
+            }
+
+            // PIN hợp lệ, gọi listener và đóng dialog
+            if (listener != null) {
+                listener.onPinEntered(enteredPin);
+            }
+            dialog.dismiss();
+        });
+
+        // Focus vào ô đầu tiên và hiển thị bàn phím sau một chút delay
         if (digits.length > 0) {
             digits[0].requestFocus();
+            // Sử dụng Handler để delay một chút, đảm bảo dialog đã render xong
+            digits[0].postDelayed(() -> {
+                digits[0].requestFocus();
+                InputMethodManager imm = (InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE);
+                if (imm != null) {
+                    imm.showSoftInput(digits[0], InputMethodManager.SHOW_IMPLICIT);
+                }
+
+                // Disable nút Xác nhận ban đầu vì chưa nhập gì
+                updateConfirmButtonState(digits);
+            }, 100);
         }
     }
 
@@ -112,7 +164,7 @@ public class PinInputDialog {
         digit.setLayoutParams(params);
 
         // Input settings
-        digit.setInputType(InputType.TYPE_CLASS_TEXT | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
+        digit.setInputType(InputType.TYPE_CLASS_NUMBER | InputType.TYPE_TEXT_FLAG_NO_SUGGESTIONS);
         digit.setTransformationMethod(new AsteriskTransformationMethod());
         digit.setGravity(Gravity.CENTER);
         digit.setTextSize(18);
@@ -143,6 +195,9 @@ public class PinInputDialog {
                 } else if (s.length() == 0 && index > 0) {
                     digits[index - 1].requestFocus();
                 }
+
+                // Kiểm tra nếu đã nhập đủ PIN thì enable nút Xác nhận
+                updateConfirmButtonState(digits);
             }
 
             public void beforeTextChanged(CharSequence s, int start, int count, int after) {}
@@ -170,6 +225,26 @@ public class PinInputDialog {
             pin.append(digit.getText().toString());
         }
         return pin.toString();
+    }
+
+    // Phương thức để cập nhật trạng thái nút Xác nhận
+    private void updateConfirmButtonState(EditText[] digits) {
+        if (dialog != null) {
+            String currentPin = getPinFromDigits(digits);
+            boolean isComplete = currentPin.length() == pinLength;
+
+            // Enable/disable nút Xác nhận dựa vào việc đã nhập đủ PIN chưa
+            dialog.getButton(AlertDialog.BUTTON_POSITIVE).setEnabled(isComplete);
+
+            // Đặt màu giống với nút Hủy khi enable/disable
+            int cancelButtonColor = dialog.getButton(AlertDialog.BUTTON_NEGATIVE).getCurrentTextColor();
+            if (isComplete) {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(cancelButtonColor);
+            } else {
+                dialog.getButton(AlertDialog.BUTTON_POSITIVE).setTextColor(
+                        ContextCompat.getColor(context, android.R.color.darker_gray));
+            }
+        }
     }
 
     // Custom TransformationMethod để hiển thị dấu * cho số
