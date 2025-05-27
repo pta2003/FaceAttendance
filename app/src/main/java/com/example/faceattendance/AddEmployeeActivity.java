@@ -212,18 +212,18 @@ public class AddEmployeeActivity extends AppCompatActivity {
             return;
         }
 
-        // Tạo ID ngẫu nhiên
+        // Tạo ID ngẫu nhiên cho nhân viên
         String employeeId = "EMP" + System.currentTimeMillis();
 
         String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                 .format(new Date());
-        //Employee employee = new Employee(employeeId,employeeName, faceEmbedding, currentDate);
+
         //lấy ảnh base64
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         faceBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
         String base64Image = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
         // Tạo ID ngẫu nhiên
-        String id = "LOG" + System.currentTimeMillis();
+        String id = "ADD" + System.currentTimeMillis();
         JSONObject json = new JSONObject();//id,deviceId,employeeId,employeeName,faceEmbedding,timestamp
         try {
             json.put("id",id);

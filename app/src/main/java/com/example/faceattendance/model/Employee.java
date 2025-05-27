@@ -29,19 +29,6 @@ public class Employee {
         this.faceBase64 = faceBase64;
     }
 
-//    public Employee(@NonNull String employeeId, String employeeName, float[] faceEmbedding, String registrationDate) {
-//        this.employeeId = employeeId;
-//        this.employeeName = employeeName;
-//        this.faceEmbedding = faceEmbedding;
-//        this.registrationDate = registrationDate;
-//    }
-
-//    public Employee(@NonNull String employeeId, float[] faceEmbedding, String registrationDate) {
-//        this.employeeId = employeeId;
-//        this.faceEmbedding = faceEmbedding;
-//        this.registrationDate = registrationDate;
-//    }
-
     @NonNull
     public String getEmployeeId() {
         return employeeId;
