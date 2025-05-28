@@ -86,6 +86,21 @@
                     android:scaleType="centerCrop"
                     android:background="@android:color/darker_gray" />
 
+                <!-- Nút cập nhật ảnh khuôn mặt (chỉ hiện khi edit mode) -->
+                <Button
+                    android:id="@+id/updateFaceButton"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginTop="16dp"
+                    android:text="Cập nhật ảnh khuôn mặt"
+                    android:textColor="#007AFF"
+                    android:textSize="14sp"
+                    android:background="?attr/selectableItemBackground"
+                    android:minWidth="0dp"
+                    android:paddingStart="16dp"
+                    android:paddingEnd="16dp"
+                    android:visibility="gone" />
+
             </LinearLayout>
 
             <!-- Thông tin chi tiết -->
@@ -156,7 +171,7 @@
                     <TextView
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:text="Mã số (không thể sửa)"
+                        android:text="Mã số nhân viên"
                         android:textSize="14sp"
                         android:textColor="#666666"
                         android:layout_marginBottom="8dp" />
@@ -225,15 +240,16 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:textSize="17sp"
-                        android:textColor="#333333"
+                        android:textColor="#666666"
                         android:paddingTop="8dp"
                         android:paddingBottom="8dp"
                         android:background="@android:color/transparent"
                         android:visibility="gone"
-                        android:hint="Chọn ngày đăng ký"
+                        android:hint="Ngày đăng ký không thể thay đổi"
                         android:textColorHint="#999999"
+                        android:enabled="false"
                         android:focusable="false"
-                        android:clickable="true"
+                        android:clickable="false"
                         android:singleLine="true" />
 
                 </LinearLayout>

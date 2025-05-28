@@ -1,49 +1,164 @@
 <?xml version="1.0" encoding="utf-8"?>
 <androidx.cardview.widget.CardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:elevation="4dp"
-    android:layout_margin="8dp"
-    android:padding="12dp">
+    android:layout_marginBottom="12dp"
+    android:layout_marginHorizontal="4dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="3dp"
+    android:foreground="?attr/selectableItemBackground"
+    android:clickable="true"
+    android:focusable="true">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
-        android:gravity="center_vertical">
+        android:padding="16dp">
 
-        <ImageView
-            android:id="@+id/ivLogFace"
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:scaleType="centerCrop"
-            android:layout_marginEnd="12dp" />
+        <!-- Face image container -->
+        <FrameLayout
+            android:layout_width="56dp"
+            android:layout_height="56dp"
+            android:layout_marginEnd="16dp">
 
+            <!-- Attendance status indicator -->
+            <ImageView
+                android:id="@+id/ivLogFace"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="@drawable/circle_avatar_background"
+                android:scaleType="centerCrop"
+                android:src="@android:drawable/ic_menu_camera" />
+
+
+        </FrameLayout>
+
+        <!-- Employee attendance info -->
         <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
+            android:orientation="vertical"
+            android:layout_gravity="center_vertical">
 
             <TextView
                 android:id="@+id/tvLogName"
-                android:text="Tên"
-                android:textStyle="bold"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Nguyễn Văn A"
                 android:textSize="16sp"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+                android:textStyle="bold"
+                android:textColor="#212121"
+                android:layout_marginBottom="4dp"
+                android:maxLines="1"
+                android:ellipsize="end" />
 
-            <TextView
-                android:id="@+id/tvLogId"
-                android:text="ID: "
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="2dp">
 
-            <TextView
-                android:id="@+id/tvLogTimestamp"
-                android:text="Thời gian"
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@android:drawable/ic_menu_info_details"
+                    android:layout_marginEnd="6dp"
+                    android:layout_gravity="center_vertical"
+                    android:alpha="0.6" />
+
+                <TextView
+                    android:id="@+id/tvLogId"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="ID: EMP001"
+                    android:textSize="14sp"
+                    android:textColor="#616161" />
+
+            </LinearLayout>
+
+            <LinearLayout
                 android:layout_width="wrap_content"
-                android:layout_height="wrap_content" />
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:layout_marginBottom="2dp">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@android:drawable/ic_menu_recent_history"
+                    android:layout_marginEnd="6dp"
+                    android:layout_gravity="center_vertical"
+                    android:alpha="0.6" />
+
+                <TextView
+                    android:id="@+id/tvLogTimestamp"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="15:30 - 29/05/2025"
+                    android:textSize="13sp"
+                    android:textColor="#757575" />
+
+            </LinearLayout>
+
+            <!-- Confidence score -->
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:visibility="gone"
+                android:id="@+id/confidenceLayout">
+
+                <ImageView
+                    android:layout_width="16dp"
+                    android:layout_height="16dp"
+                    android:src="@android:drawable/ic_menu_sort_by_size"
+                    android:layout_marginEnd="6dp"
+                    android:layout_gravity="center_vertical"
+                    android:alpha="0.6" />
+
+                <TextView
+                    android:id="@+id/tvConfidenceScore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Độ tin cậy: 95%"
+                    android:textSize="12sp"
+                    android:textColor="#4CAF50" />
+
+            </LinearLayout>
+
         </LinearLayout>
+
+        <!-- Attendance type indicator -->
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center_vertical"
+            android:orientation="vertical"
+            android:gravity="center">
+
+
+            <TextView
+                android:id="@+id/tvTimeOnly"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="15:30"
+                android:textSize="14sp"
+                android:textStyle="bold"
+                android:textColor="#2196F3" />
+
+        </LinearLayout>
+
     </LinearLayout>
+
+    <!-- Subtle bottom border -->
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/card_bottom_border"
+        android:layout_marginHorizontal="16dp" />
+
 </androidx.cardview.widget.CardView>

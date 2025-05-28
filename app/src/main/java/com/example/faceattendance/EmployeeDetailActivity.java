@@ -1,7 +1,7 @@
 package com.example.faceattendance;
 
-import android.app.DatePickerDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Color;
@@ -12,7 +12,6 @@ import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
-import android.widget.DatePicker;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.ImageView;
@@ -20,6 +19,7 @@ import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.room.Room;
 
@@ -32,10 +32,12 @@ import java.util.Locale;
 
 public class EmployeeDetailActivity extends AppCompatActivity {
 
+    private static final int UPDATE_FACE_REQUEST_CODE = 1001;
+
     private TextView nameTextView, idTextView, dateTextView;
     private EditText nameEditText, idEditText, dateEditText;
     private ImageView faceImageView;
-    private Button editButton, saveButton, cancelButton;
+    private Button editButton, saveButton, cancelButton, updateFaceButton;
     private ImageButton backButton;
     private LinearLayout editButtonsLayout;
 
@@ -77,6 +79,7 @@ public class EmployeeDetailActivity extends AppCompatActivity {
         cancelButton = findViewById(R.id.cancelButton);
         backButton = findViewById(R.id.backButton);
         editButtonsLayout = findViewById(R.id.editButtonsLayout);
+        updateFaceButton = findViewById(R.id.updateFaceButton);
     }
 
     private void setupDatabase() {
@@ -101,7 +104,9 @@ public class EmployeeDetailActivity extends AppCompatActivity {
 
         cancelButton.setOnClickListener(v -> showCancelConfirmation());
 
-        dateEditText.setOnClickListener(v -> showDatePicker());
+        updateFaceButton.setOnClickListener(v -> openUpdateFaceActivity());
+
+        // Removed date picker listener since date is not editable
 
         // Setup IME action for EditTexts
         nameEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -116,6 +121,10 @@ public class EmployeeDetailActivity extends AppCompatActivity {
         // Make ID field non-editable but keep it focusable for UI consistency
         idEditText.setEnabled(false);
         idEditText.setAlpha(0.6f); // Make it appear disabled
+
+        // Make date field non-editable
+        dateEditText.setEnabled(false);
+        dateEditText.setAlpha(0.6f); // Make it appear disabled
     }
 
     private void loadEmployeeData() {
@@ -166,6 +175,27 @@ public class EmployeeDetailActivity extends AppCompatActivity {
         }
     }
 
+    private void openUpdateFaceActivity() {
+        Intent intent = new Intent(this, UpdateFaceActivity.class);
+        intent.putExtra(UpdateFaceActivity.EXTRA_EMPLOYEE_ID, currentEmployee.getEmployeeId());
+        intent.putExtra(UpdateFaceActivity.EXTRA_EMPLOYEE_NAME, currentEmployee.getEmployeeName());
+        startActivityForResult(intent, UPDATE_FACE_REQUEST_CODE);
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, @Nullable Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+
+        if (requestCode == UPDATE_FACE_REQUEST_CODE && resultCode == RESULT_OK) {
+            if (data != null && data.getBooleanExtra("updated", false)) {
+                // Reload employee data to get updated face information
+                currentEmployee = db.employeeDao().getEmployeeById(currentEmployee.getEmployeeId());
+                loadEmployeeImage();
+                Toast.makeText(this, "Đã cập nhật thông tin khuôn mặt", Toast.LENGTH_SHORT).show();
+            }
+        }
+    }
+
     private void enterEditMode() {
         isEditMode = true;
 
@@ -182,6 +212,9 @@ public class EmployeeDetailActivity extends AppCompatActivity {
         // Hide edit button, show save/cancel buttons
         editButton.setVisibility(View.GONE);
         editButtonsLayout.setVisibility(View.VISIBLE);
+
+        // Show update face button in edit mode
+        updateFaceButton.setVisibility(View.VISIBLE);
     }
 
     private void exitEditMode() {
@@ -200,12 +233,14 @@ public class EmployeeDetailActivity extends AppCompatActivity {
         // Show edit button, hide save/cancel buttons
         editButton.setVisibility(View.VISIBLE);
         editButtonsLayout.setVisibility(View.GONE);
+
+        // Hide update face button when not in edit mode
+        updateFaceButton.setVisibility(View.GONE);
     }
 
     private void saveChanges() {
         String newName = nameEditText.getText().toString().trim();
-        String newId = idEditText.getText().toString().trim(); // ID won't change since it's disabled
-        String newDate = dateEditText.getText().toString().trim();
+        // Removed date validation since it's no longer editable
 
         // Validate input
         if (TextUtils.isEmpty(newName)) {
@@ -214,15 +249,9 @@ public class EmployeeDetailActivity extends AppCompatActivity {
             return;
         }
 
-        if (TextUtils.isEmpty(newDate)) {
-            dateEditText.setError("Ngày đăng ký không được để trống");
-            dateEditText.requestFocus();
-            return;
-        }
-
-        // Update employee object (ID remains the same)
+        // Update employee object (only name can be changed)
         currentEmployee.setEmployeeName(newName);
-        currentEmployee.setRegistrationDate(newDate);
+        // Date and ID remain unchanged
 
         try {
             // Update in database
@@ -247,9 +276,8 @@ public class EmployeeDetailActivity extends AppCompatActivity {
                 .setTitle("Hủy chỉnh sửa")
                 .setMessage("Bạn có chắc chắn muốn hủy? Các thay đổi sẽ không được lưu.")
                 .setPositiveButton("Hủy", (dialog, which) -> {
-                    // Reset EditText values
+                    // Reset EditText values (only name needs to be reset)
                     nameEditText.setText(currentEmployee.getEmployeeName());
-                    dateEditText.setText(currentEmployee.getRegistrationDate());
 
                     // Hide keyboard
                     hideKeyboard();
@@ -266,39 +294,6 @@ public class EmployeeDetailActivity extends AppCompatActivity {
         if (currentFocus != null) {
             imm.hideSoftInputFromWindow(currentFocus.getWindowToken(), 0);
         }
-    }
-
-    private void showDatePicker() {
-        // Parse current date if available
-        try {
-            String currentDateStr = dateEditText.getText().toString();
-            if (!TextUtils.isEmpty(currentDateStr)) {
-                String[] parts = currentDateStr.split("/");
-                if (parts.length == 3) {
-                    int day = Integer.parseInt(parts[0]);
-                    int month = Integer.parseInt(parts[1]) - 1; // Month is 0-based
-                    int year = Integer.parseInt(parts[2]);
-                    calendar.set(year, month, day);
-                }
-            }
-        } catch (Exception e) {
-            // Use current date if parsing fails
-            calendar = Calendar.getInstance();
-        }
-
-        DatePickerDialog datePickerDialog = new DatePickerDialog(
-                this,
-                (view, year, month, dayOfMonth) -> {
-                    calendar.set(year, month, dayOfMonth);
-                    String selectedDate = dateFormat.format(calendar.getTime());
-                    dateEditText.setText(selectedDate);
-                },
-                calendar.get(Calendar.YEAR),
-                calendar.get(Calendar.MONTH),
-                calendar.get(Calendar.DAY_OF_MONTH)
-        );
-
-        datePickerDialog.show();
     }
 
     @Override

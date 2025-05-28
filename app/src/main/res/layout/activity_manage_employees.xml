@@ -3,19 +3,86 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:padding="16dp">
+    android:background="#F8F9FA">
 
-    <TextView
-        android:id="@+id/manageTitle"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="Danh sách nhân viên"
-        android:textSize="20sp"
-        android:textStyle="bold"
-        android:layout_marginBottom="8dp" />
-
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/recyclerViewEmployees"
+    <!-- Header với gradient background -->
+    <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"/>
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/header_gradient_background"
+        android:padding="24dp"
+        android:elevation="4dp">
+
+        <TextView
+            android:id="@+id/manageTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Danh sách nhân viên"
+            android:textSize="24sp"
+            android:textStyle="bold"
+            android:textColor="#FFFFFF"
+            android:layout_marginBottom="4dp" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Quản lý thông tin nhân viên"
+            android:textSize="14sp"
+            android:textColor="#E3F2FD"
+            android:alpha="0.9" />
+
+    </LinearLayout>
+
+    <!-- Container cho RecyclerView -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:padding="16dp">
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/recyclerViewEmployees"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp"
+            android:scrollbars="vertical"
+            android:fadeScrollbars="true" />
+
+        <!-- Empty state view -->
+        <LinearLayout
+            android:id="@+id/emptyStateLayout"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center"
+            android:orientation="vertical"
+            android:gravity="center"
+            android:visibility="gone">
+
+            <ImageView
+                android:layout_width="80dp"
+                android:layout_height="80dp"
+                android:src="@android:drawable/ic_menu_agenda"
+                android:alpha="0.3"
+                android:layout_marginBottom="16dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Chưa có nhân viên nào"
+                android:textSize="16sp"
+                android:textColor="#666666"
+                android:layout_marginBottom="8dp" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Hãy thêm nhân viên đầu tiên"
+                android:textSize="14sp"
+                android:textColor="#999999" />
+
+        </LinearLayout>
+
+    </FrameLayout>
+
 </LinearLayout>

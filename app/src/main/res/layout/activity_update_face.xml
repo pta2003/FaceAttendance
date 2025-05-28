@@ -4,7 +4,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context=".FaceDetectionActivity">
+    tools:context=".UpdateFaceActivity">
 
     <androidx.camera.view.PreviewView
         android:id="@+id/previewView"
@@ -27,12 +27,39 @@
         android:layout_height="wrap_content"
         android:background="#80000000"
         android:padding="16dp"
-        android:text="Please position your face within the oval"
+        android:text="Đặt khuôn mặt trong khung oval và mỉm cười"
         android:textColor="#FFFFFF"
         android:textSize="16sp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/employeeInfoTextView"
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="Cập nhật khuôn mặt cho: "
+        android:textColor="#FFFFFF"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:padding="12dp"
+        android:background="#AA000000"
+        app:layout_constraintEnd_toStartOf="@+id/captureButton"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
+    <Button
+        android:id="@+id/captureButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:layout_marginEnd="16dp"
+        android:text="Chụp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Button
         android:id="@+id/backButton"
@@ -41,6 +68,6 @@
         android:layout_margin="16dp"
         android:text="Quay lại"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintBottom_toTopOf="@+id/statusTextView" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
