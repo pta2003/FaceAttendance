@@ -1,42 +1,284 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:padding="16dp">
+    android:background="#FFFFFF">
 
+    <!-- Header với nút Back -->
     <LinearLayout
+        android:id="@+id/headerLayout"
+        android:layout_width="match_parent"
+        android:layout_height="80dp"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingStart="12dp"
+        android:paddingEnd="16dp"
+        android:paddingTop="24dp"
+        android:background="#FFFFFF"
+        android:elevation="2dp">
+
+        <ImageButton
+            android:id="@+id/backButton"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_revert"
+            android:contentDescription="Quay lại" />
+
+        <TextView
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Chi tiết"
+            android:textColor="#333333"
+            android:textSize="18sp"
+            android:textStyle="bold"
+            android:layout_marginStart="8dp" />
+
+        <Button
+            android:id="@+id/editButton"
+            android:layout_width="wrap_content"
+            android:layout_height="36dp"
+            android:text="Sửa"
+            android:textColor="#007AFF"
+            android:textSize="16sp"
+            android:background="?attr/selectableItemBackground"
+            android:minWidth="0dp"
+            android:paddingStart="16dp"
+            android:paddingEnd="16dp" />
+
+    </LinearLayout>
+
+    <!-- Đường phân cách -->
+    <View
+        android:id="@+id/divider"
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:layout_below="@id/headerLayout"
+        android:background="#E0E0E0" />
+
+    <!-- Nội dung chính -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_below="@id/divider"
+        android:layout_above="@id/editButtonsLayout">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
+            <!-- Ảnh đại diện -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingTop="32dp"
+                android:paddingBottom="32dp"
+                android:background="#FAFAFA">
+
+                <ImageView
+                    android:id="@+id/faceImageView"
+                    android:layout_width="160dp"
+                    android:layout_height="160dp"
+                    android:scaleType="centerCrop"
+                    android:background="@android:color/darker_gray" />
+
+            </LinearLayout>
+
+            <!-- Thông tin chi tiết -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <!-- Tên -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingTop="16dp"
+                    android:paddingBottom="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Họ và tên"
+                        android:textSize="14sp"
+                        android:textColor="#666666"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/nameTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Tên người dùng"
+                        android:textSize="17sp"
+                        android:textColor="#333333"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp" />
+
+                    <EditText
+                        android:id="@+id/nameEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="17sp"
+                        android:textColor="#333333"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp"
+                        android:background="@android:color/transparent"
+                        android:visibility="gone"
+                        android:hint="Nhập họ và tên"
+                        android:textColorHint="#999999"
+                        android:inputType="textPersonName"
+                        android:imeOptions="actionDone"
+                        android:singleLine="true" />
+
+                </LinearLayout>
+
+                <!-- Đường phân cách -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E8E8E8" />
+
+                <!-- ID -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingTop="16dp"
+                    android:paddingBottom="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Mã số (không thể sửa)"
+                        android:textSize="14sp"
+                        android:textColor="#666666"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/idTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="ID12345"
+                        android:textSize="17sp"
+                        android:textColor="#333333"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp" />
+
+                    <EditText
+                        android:id="@+id/idEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="17sp"
+                        android:textColor="#666666"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp"
+                        android:background="@android:color/transparent"
+                        android:visibility="gone"
+                        android:hint="Mã số không thể thay đổi"
+                        android:textColorHint="#999999"
+                        android:enabled="false"
+                        android:singleLine="true" />
+
+                </LinearLayout>
+
+                <!-- Đường phân cách -->
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="1dp"
+                    android:background="#E8E8E8" />
+
+                <!-- Ngày đăng ký -->
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:paddingTop="16dp"
+                    android:paddingBottom="16dp">
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="Ngày đăng ký"
+                        android:textSize="14sp"
+                        android:textColor="#666666"
+                        android:layout_marginBottom="8dp" />
+
+                    <TextView
+                        android:id="@+id/dateTextView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="01/01/2024"
+                        android:textSize="17sp"
+                        android:textColor="#333333"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp" />
+
+                    <EditText
+                        android:id="@+id/dateEditText"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:textSize="17sp"
+                        android:textColor="#333333"
+                        android:paddingTop="8dp"
+                        android:paddingBottom="8dp"
+                        android:background="@android:color/transparent"
+                        android:visibility="gone"
+                        android:hint="Chọn ngày đăng ký"
+                        android:textColorHint="#999999"
+                        android:focusable="false"
+                        android:clickable="true"
+                        android:singleLine="true" />
+
+                </LinearLayout>
+
+            </LinearLayout>
+
+        </LinearLayout>
+
+    </ScrollView>
+
+    <!-- Nút Hủy và Lưu khi ở chế độ chỉnh sửa -->
+    <LinearLayout
+        android:id="@+id/editButtonsLayout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical">
+        android:layout_alignParentBottom="true"
+        android:orientation="horizontal"
+        android:padding="16dp"
+        android:background="#FFFFFF"
+        android:elevation="4dp"
+        android:visibility="gone">
 
-        <TextView
-            android:id="@+id/nameTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Tên"
-            android:textSize="18sp"
-            android:textStyle="bold" />
+        <Button
+            android:id="@+id/cancelButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Hủy"
+            android:textColor="#333333"
+            android:textSize="16sp"
+            android:background="@android:color/transparent"
+            android:layout_marginEnd="8dp" />
 
-        <TextView
-            android:id="@+id/idTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="ID"
-            android:textSize="16sp" />
+        <Button
+            android:id="@+id/saveButton"
+            android:layout_width="0dp"
+            android:layout_height="48dp"
+            android:layout_weight="1"
+            android:text="Lưu"
+            android:textColor="#007AFF"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:background="@android:color/transparent"
+            android:layout_marginStart="8dp" />
 
-        <TextView
-            android:id="@+id/dateTextView"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Ngày đăng ký"
-            android:textSize="16sp" />
-
-        <ImageView
-            android:id="@+id/faceImageView"
-            android:layout_width="200dp"
-            android:layout_height="200dp"
-            android:layout_marginTop="16dp"
-            android:layout_gravity="center"
-            android:scaleType="centerCrop" />
     </LinearLayout>
-</ScrollView>
+
+</RelativeLayout>

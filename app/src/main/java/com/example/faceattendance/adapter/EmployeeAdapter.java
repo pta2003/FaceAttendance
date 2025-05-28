@@ -1,10 +1,8 @@
 package com.example.faceattendance.adapter;
 
-import com.example.faceattendance.EmployeeDetailActivity;
 import com.example.faceattendance.R;
 
 import android.content.Context;
-import android.content.Intent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -21,10 +19,17 @@ public class EmployeeAdapter extends RecyclerView.Adapter<EmployeeAdapter.Employ
 
     private List<Employee> employeeList;
     private Context context;
+    private OnEmployeeClickListener clickListener;
 
-    public EmployeeAdapter(Context context, List<Employee> employeeList) {
+    // Interface để handle click event
+    public interface OnEmployeeClickListener {
+        void onEmployeeClick(String employeeId);
+    }
+
+    public EmployeeAdapter(Context context, List<Employee> employeeList, OnEmployeeClickListener clickListener) {
         this.employeeList = employeeList;
         this.context = context;
+        this.clickListener = clickListener;
     }
 
     @NonNull
@@ -42,17 +47,23 @@ public class EmployeeAdapter extends RecyclerView.Adapter<EmployeeAdapter.Employ
         holder.employeeId.setText("ID: " + employee.getEmployeeId());
         holder.registrationDate.setText("Ngày đăng kí: " + employee.getRegistrationDate());
 
-        // Bắt sự kiện click
+        // Bắt sự kiện click với callback
         holder.itemView.setOnClickListener(v -> {
-            Intent intent = new Intent(context, EmployeeDetailActivity.class);
-            intent.putExtra("employeeId", employee.getEmployeeId());
-            context.startActivity(intent);
+            if (clickListener != null) {
+                clickListener.onEmployeeClick(employee.getEmployeeId());
+            }
         });
     }
 
     @Override
     public int getItemCount() {
         return employeeList.size();
+    }
+
+    // Method để cập nhật dữ liệu
+    public void updateEmployeeList(List<Employee> newEmployeeList) {
+        this.employeeList = newEmployeeList;
+        notifyDataSetChanged();
     }
 
     public static class EmployeeViewHolder extends RecyclerView.ViewHolder {
