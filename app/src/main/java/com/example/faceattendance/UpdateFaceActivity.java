@@ -207,6 +207,7 @@ public class UpdateFaceActivity extends AppCompatActivity {
                     });
         }
     }
+// Trong UpdateFaceActivity - Thay đổi method captureAndUpdateFace()
 
     private void captureAndUpdateFace() {
         if (currentFace == null || currentBitmap == null) {
@@ -231,37 +232,20 @@ public class UpdateFaceActivity extends AppCompatActivity {
         faceBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
         String base64Image = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
 
-        try {
-            // Get current employee
-            Employee employee = faceDatabase.employeeDao().getEmployeeById(employeeId);
-            if (employee != null) {
-                // Update face data
-                employee.setFaceEmbedding(faceEmbedding);
-                employee.setFaceBase64(base64Image);
+        // KHÔNG LƯU VÀO DATABASE, CHỈ TRẢ VỀ KẾT QUẢ
+        Toast.makeText(this, "Chụp ảnh thành công!", Toast.LENGTH_SHORT).show();
+        updateStatus("Ảnh khuôn mặt đã được cập nhật. Nhấn Lưu để hoàn tất.");
 
-                // Update in database
-                faceDatabase.employeeDao().update(employee);
+        // Return result to parent activity
+        Intent resultIntent = new Intent();
+        resultIntent.putExtra("updated", true);
+        resultIntent.putExtra("newFaceEmbedding", faceEmbedding);
+        resultIntent.putExtra("newFaceBase64", base64Image);
+        setResult(RESULT_OK, resultIntent);
 
-                Toast.makeText(this, "Cập nhật khuôn mặt thành công!", Toast.LENGTH_LONG).show();
-                updateStatus("Khuôn mặt của " + employeeName + " đã được cập nhật!");
-
-                // Return result to parent activity
-                Intent resultIntent = new Intent();
-                resultIntent.putExtra("updated", true);
-                setResult(RESULT_OK, resultIntent);
-
-                statusTextView.postDelayed(() -> {
-                    finish();
-                }, 2000);
-            } else {
-                Toast.makeText(this, "Không tìm thấy thông tin nhân viên", Toast.LENGTH_SHORT).show();
-                isCapturing = false;
-            }
-        } catch (Exception e) {
-            Log.e(TAG, "Error updating face data", e);
-            Toast.makeText(this, "Lỗi khi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show();
-            isCapturing = false;
-        }
+        statusTextView.postDelayed(() -> {
+            finish();
+        }, 1500);
     }
 
     private void updateStatus(String message) {
