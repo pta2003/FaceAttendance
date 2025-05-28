@@ -3,7 +3,9 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
-    android:background="#F8F9FA">
+    android:background="#F8F9FA"
+    android:focusable="true"
+    android:focusableInTouchMode="true">
 
     <!-- Header với gradient background -->
     <LinearLayout
@@ -24,7 +26,6 @@
             android:textColor="#FFFFFF"
             android:layout_marginBottom="4dp" />
 
-
     </LinearLayout>
 
     <!-- Filter section -->
@@ -41,7 +42,7 @@
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:layout_marginEnd="8dp"
-            android:hint="Tìm kiếm theo tên..."
+            android:hint="Tìm kiếm theo tên hoặc ID..."
             style="@style/Widget.MaterialComponents.TextInputLayout.OutlinedBox">
 
             <com.google.android.material.textfield.TextInputEditText
@@ -49,7 +50,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:inputType="text"
-                android:maxLines="1" />
+                android:maxLines="1"
+                android:imeOptions="actionSearch"
+                android:singleLine="true" />
 
         </com.google.android.material.textfield.TextInputLayout>
 
@@ -60,8 +63,7 @@
             android:layout_gravity="center_vertical"
             android:text="Lọc ngày"
             android:textSize="12sp"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
-             />
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton" />
 
     </LinearLayout>
 
@@ -135,7 +137,9 @@
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="16dp">
+        android:padding="16dp"
+        android:clickable="true"
+        android:focusable="true">
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/recyclerViewLogs"
