@@ -1,6 +1,8 @@
 package com.example.faceattendance;
 
 import android.annotation.SuppressLint;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.Rect;
 import android.media.Image;
@@ -30,6 +32,7 @@ import com.example.faceattendance.mqtt.MqttCallbackListener;
 import com.example.faceattendance.mqtt.MqttManager;
 import com.example.faceattendance.utils.FaceRecognitionHelper;
 import com.example.faceattendance.utils.LivenessDetector;
+import com.example.faceattendance.utils.PinInputDialog;
 import com.example.faceattendance.utils.YuvToRgbConverter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.common.InputImage;
@@ -50,6 +53,9 @@ import java.util.concurrent.Executors;
 
 public class AddEmployeeActivity extends AppCompatActivity {
     private static final String TAG = "AddEmployeeActivity";
+    private static final String ADMIN_PIN = "123456"; // PIN admin giống MainActivity
+    private static final String PREFS_NAME = "AdminPrefs";
+    private static final String KEY_UNLOCK_TIME = "unlock_time";
 
     private PreviewView previewView;
     private TextView statusTextView;
@@ -68,6 +74,9 @@ public class AddEmployeeActivity extends AppCompatActivity {
     private Bitmap currentBitmap = null;
     private int currentRotationDegrees = 0;
 
+    // Biến cho PIN security
+    private int failedAttempts = 0;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -79,7 +88,8 @@ public class AddEmployeeActivity extends AppCompatActivity {
         captureButton = findViewById(R.id.captureButton);
         backButton = findViewById(R.id.backButton);
 
-        captureButton.setOnClickListener(v -> captureAndRegisterFace());
+        // Sửa đổi click listener cho captureButton để yêu cầu PIN trước
+        captureButton.setOnClickListener(v -> showPinDialog());
         backButton.setOnClickListener(v -> finish());
 
         FaceDetectorOptions options = new FaceDetectorOptions.Builder()
@@ -100,6 +110,59 @@ public class AddEmployeeActivity extends AppCompatActivity {
 
         cameraExecutor = Executors.newSingleThreadExecutor();
         startCamera();
+    }
+
+    private void showPinDialog() {
+        new PinInputDialog(this, "Nhập mã PIN để thêm nhân viên", 6)
+                .setListener(new PinInputDialog.PinInputListener() {
+                    @Override
+                    public void onPinEntered(String pin) {
+                        handlePinInput(pin);
+                    }
+
+                    @Override
+                    public void onPinCancelled() {
+                        // Không cần xử lý gì khi hủy
+                    }
+                })
+                .show();
+    }
+
+    private void handlePinInput(String enteredPin) {
+        if (ADMIN_PIN.equals(enteredPin)) {
+            // PIN đúng - tiến hành chụp và đăng ký
+            failedAttempts = 0;
+            Toast.makeText(this, "Xác thực thành công!", Toast.LENGTH_SHORT).show();
+            captureAndRegisterFace();
+        } else {
+            // PIN sai
+            failedAttempts++;
+            String message = "Mã PIN sai! (" + failedAttempts + "/3)";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+
+            if (failedAttempts >= 3) {
+                // Nhập sai 3 lần - khóa nút quản lý và quay về MainActivity
+                lockManageButtonAndReturn();
+            }
+        }
+    }
+
+    private void lockManageButtonAndReturn() {
+        // Lưu trạng thái khóa cho MainActivity
+        long unlockTime = System.currentTimeMillis() + (1 * 60 * 1000); // khóa 1 phút
+        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
+        editor.putLong(KEY_UNLOCK_TIME, unlockTime);
+        editor.apply();
+
+        Toast.makeText(this,
+                "Đã nhập sai PIN quá 3 lần. Nút quản lý bị khóa 1 phút.",
+                Toast.LENGTH_LONG).show();
+
+        // Quay về MainActivity
+        Intent intent = new Intent(this, MainActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+        startActivity(intent);
+        finish();
     }
 
     private void startCamera() {
@@ -171,7 +234,7 @@ public class AddEmployeeActivity extends AppCompatActivity {
                             currentBitmap = bitmap;
                             currentRotationDegrees = rotationDegrees;
 
-                            updateStatus("Face detected. Smile and blink for liveness check.");
+                            updateStatus("Face detected. Enter name and click capture to add employee.");
 
                             livenessDetector.processFace(currentFace);
                             if (livenessDetector.isSmileDetected()) {
@@ -271,7 +334,6 @@ public class AddEmployeeActivity extends AppCompatActivity {
             finish();
         }, 2000);
     }
-
 
     private void updateStatus(String message) {
         runOnUiThread(() -> statusTextView.setText(message));

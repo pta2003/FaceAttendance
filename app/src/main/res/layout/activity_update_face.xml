@@ -11,6 +11,13 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" />
 
+    <!-- Custom Oval Mask View -->
+    <com.example.faceattendance.utils.OvalMaskView
+        android:id="@+id/ovalMaskView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <!-- Oval border outline (optional - để hiển thị viền oval) -->
     <ImageView
         android:id="@+id/faceOvalOverlay"
         android:layout_width="300dp"
