@@ -183,6 +183,8 @@ public class EmployeeDetailActivity extends AppCompatActivity {
                 intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
                 startActivity(intent);
                 finish();
+            }else{
+                showPinDialogBeforeSave();
             }
         }
     }
@@ -233,15 +235,11 @@ public class EmployeeDetailActivity extends AppCompatActivity {
                 Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
                 faceImageView.setImageBitmap(bitmap);
             } catch (Exception e) {
-                // Fallback to generated bitmap from embedding if Base64 fails
-                if (currentEmployee.getFaceEmbedding() != null) {
-                    Bitmap bitmap = generateBitmapFromEmbedding(currentEmployee.getFaceEmbedding());
-                    faceImageView.setImageBitmap(bitmap);
-                }
+                // Handle Base64 decode error
+                faceImageView.setImageResource(R.drawable.ic_person_placeholder);
             }
-        } else if (currentEmployee.getFaceEmbedding() != null) {
-            Bitmap bitmap = generateBitmapFromEmbedding(currentEmployee.getFaceEmbedding());
-            faceImageView.setImageBitmap(bitmap);
+        } else {
+            faceImageView.setImageResource(R.drawable.ic_person_placeholder);
         }
     }
 
@@ -336,13 +334,6 @@ public class EmployeeDetailActivity extends AppCompatActivity {
 
     private void saveChanges() {
         String newName = nameEditText.getText().toString().trim();
-
-//        // Validate input
-//        if (TextUtils.isEmpty(newName)) {
-//            nameEditText.setError("Tên không được để trống");
-//            nameEditText.requestFocus();
-//            return;
-//        }
 
         // Update employee object
         currentEmployee.setEmployeeName(newName);

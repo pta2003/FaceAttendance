@@ -119,6 +119,8 @@ public class MainActivity extends AppCompatActivity {
             if (failedAttempts >= 5) {
                 lockManageButton(1 * 60 * 1000); // khóa 1 phút
                 Toast.makeText(this, "Đã nhập sai quá nhiều lần. Tạm khóa 1 phút.", Toast.LENGTH_LONG).show();
+            }else{
+                showPinDialog();
             }
         }
     }

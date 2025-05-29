@@ -95,6 +95,8 @@ public class EmployeeAdapter extends RecyclerView.Adapter<EmployeeAdapter.Employ
             byte[] decodedBytes = Base64.decode(faceBase64, Base64.NO_WRAP);
             Bitmap bitmap = BitmapFactory.decodeByteArray(decodedBytes, 0, decodedBytes.length);
             avatarView.setImageBitmap(bitmap);
+        }else{
+            avatarView.setImageResource(R.drawable.ic_person_placeholder);
         }
     }
 

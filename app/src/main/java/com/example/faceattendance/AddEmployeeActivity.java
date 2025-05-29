@@ -50,6 +50,7 @@ import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import android.os.Handler;
 
 public class AddEmployeeActivity extends AppCompatActivity {
     private static final String TAG = "AddEmployeeActivity";
@@ -77,6 +78,11 @@ public class AddEmployeeActivity extends AppCompatActivity {
     // Biến cho PIN security
     private int failedAttempts = 0;
 
+    // Biến để lưu trữ dữ liệu đã capture
+    private float[] capturedFaceEmbedding = null;
+    private String capturedBase64Image = null;
+    private String capturedEmployeeName = null;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -88,8 +94,8 @@ public class AddEmployeeActivity extends AppCompatActivity {
         captureButton = findViewById(R.id.captureButton);
         backButton = findViewById(R.id.backButton);
 
-        // Sửa đổi click listener cho captureButton để yêu cầu PIN trước
-        captureButton.setOnClickListener(v -> showPinDialog());
+        // Sửa đổi click listener cho captureButton để yêu cầu PIN sau khi capture
+        captureButton.setOnClickListener(v -> captureAndRegisterFace());
         backButton.setOnClickListener(v -> finish());
 
         FaceDetectorOptions options = new FaceDetectorOptions.Builder()
@@ -122,27 +128,42 @@ public class AddEmployeeActivity extends AppCompatActivity {
 
                     @Override
                     public void onPinCancelled() {
-                        // Không cần xử lý gì khi hủy
+                        // Reset trạng thái capture khi hủy PIN
+                        resetCaptureState();
+                        updateStatus("Registration cancelled. Ready for next registration.");
                     }
                 })
                 .show();
     }
 
+    // Hàm helper để hiển thị Toast với thời gian tùy chỉnh
+    private void showCustomToast(String message, int durationMs) {
+        Toast toast = Toast.makeText(this, message, Toast.LENGTH_SHORT);
+        toast.show();
+
+        // Tự động dismiss toast sau thời gian tùy chỉnh
+        new Handler().postDelayed(toast::cancel, durationMs);
+    }
+
     private void handlePinInput(String enteredPin) {
         if (ADMIN_PIN.equals(enteredPin)) {
-            // PIN đúng - tiến hành chụp và đăng ký
+            // PIN đúng - tiến hành đăng ký với dữ liệu đã capture
             failedAttempts = 0;
-            Toast.makeText(this, "Xác thực thành công!", Toast.LENGTH_SHORT).show();
-            captureAndRegisterFace();
+            showCustomToast("Xác thực thành công!", 800); // Hiển thị 800ms
+            registerEmployeeWithCapturedData();
         } else {
             // PIN sai
             failedAttempts++;
             String message = "Mã PIN sai! (" + failedAttempts + "/3)";
-            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            showCustomToast(message, 1000); // Hiển thị 1000ms (1 giây)
 
             if (failedAttempts >= 3) {
                 // Nhập sai 3 lần - khóa nút quản lý và quay về MainActivity
                 lockManageButtonAndReturn();
+            } else {
+                // Hiển thị lại dialog PIN để nhập lại, không reset dữ liệu đã capture
+                // Delay một chút để Toast hiển thị trước khi mở dialog mới
+                new Handler().postDelayed(this::showPinDialog, 500);
             }
         }
     }
@@ -275,34 +296,54 @@ public class AddEmployeeActivity extends AppCompatActivity {
             return;
         }
 
-        // Tạo ID ngẫu nhiên cho nhân viên
-        String employeeId = "EMP" + System.currentTimeMillis();
+        // Lấy ảnh base64
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        faceBitmap.compress(Bitmap.CompressFormat.WEBP, 10, baos);
+        String base64Image = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
 
+        // Lưu dữ liệu đã capture
+        capturedFaceEmbedding = faceEmbedding;
+        capturedBase64Image = base64Image;
+        capturedEmployeeName = employeeName;
+
+        // Hiển thị thông báo capture thành công và yêu cầu PIN
+        showCustomToast("Face captured successfully! Please enter PIN to register.", 1200);
+        updateStatus("Face captured! Enter PIN to complete registration.");
+
+        // Gọi dialog PIN sau khi đã capture xong
+        showPinDialog();
+    }
+
+    // Hàm mới để đăng ký nhân viên với dữ liệu đã capture
+    private void registerEmployeeWithCapturedData() {
+        if (capturedFaceEmbedding == null || capturedBase64Image == null || capturedEmployeeName == null) {
+            Toast.makeText(this, "No captured data found. Please try again.", Toast.LENGTH_SHORT).show();
+            resetCaptureState();
+            return;
+        }
+
+        // Tạo ID ngẫu nhiên
+        String id = "ADD" + System.currentTimeMillis();
+        String employeeId = "EMP" + System.currentTimeMillis();
         String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
                 .format(new Date());
 
-        //lấy ảnh base64
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        faceBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
-        String base64Image = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
-        // Tạo ID ngẫu nhiên
-        String id = "ADD" + System.currentTimeMillis();
-        JSONObject json = new JSONObject();//id,deviceId,employeeId,employeeName,faceEmbedding,timestamp
+        JSONObject json = new JSONObject();
         try {
-            json.put("id",id);
-            json.put("deviceId",MainActivity.DEVICE_ID);
+            json.put("id", id);
+            json.put("deviceId", MainActivity.DEVICE_ID);
             json.put("employeeId", employeeId);
-            json.put("employeeName",employeeName);
-            json.put("faceEmbedding", faceEmbedding);
+            json.put("employeeName", capturedEmployeeName);
+            json.put("faceEmbedding", capturedFaceEmbedding);
             json.put("timestamp", currentTime);
         } catch (Exception e) {
             Log.e("MQTT_JSON", "JSON creation failed", e);
         }
 
         final String employeeIdFinal = employeeId;
-        final String employeeNameFinal = employeeName;
+        final String employeeNameFinal = capturedEmployeeName;
         final String timeFinal = currentTime;
-        final String imageFinal = base64Image;
+        final String imageFinal = capturedBase64Image;
 
         MqttManager mqttManager = new MqttManager();
         String topic = "attendance/add_employee";
@@ -318,21 +359,28 @@ public class AddEmployeeActivity extends AppCompatActivity {
             }
         });
 
-        //String employeeId, String employeeName, float[] faceEmbedding, String registrationDate, String faceBase64
-        Employee employee = new Employee(employeeIdFinal, employeeNameFinal, faceEmbedding, timeFinal, imageFinal);
+        Employee employee = new Employee(employeeIdFinal, employeeNameFinal, capturedFaceEmbedding, timeFinal, imageFinal);
         faceDatabase.employeeDao().insert(employee);
 
-        Toast.makeText(this, "Employee registered successfully", Toast.LENGTH_LONG).show();
-        updateStatus("Employee " + employeeName + " registered!");
+        showCustomToast("Employee registered successfully", 1500);
+        updateStatus("Employee " + capturedEmployeeName + " registered!");
 
         employeeNameEditText.setText("");
 
         statusTextView.postDelayed(() -> {
-            isCapturing = false;
-            livenessDetector.reset();
+            resetCaptureState();
             updateStatus("Ready for next registration. Position face within the oval.");
             finish();
         }, 2000);
+    }
+
+    // Hàm để reset trạng thái capture
+    private void resetCaptureState() {
+        isCapturing = false;
+        capturedFaceEmbedding = null;
+        capturedBase64Image = null;
+        capturedEmployeeName = null;
+        livenessDetector.reset();
     }
 
     private void updateStatus(String message) {

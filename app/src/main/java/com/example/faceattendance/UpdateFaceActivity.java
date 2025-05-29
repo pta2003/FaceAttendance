@@ -229,7 +229,7 @@ public class UpdateFaceActivity extends AppCompatActivity {
 
         // Convert face bitmap to base64
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        faceBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+        faceBitmap.compress(Bitmap.CompressFormat.WEBP, 10, baos);
         String base64Image = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
 
         // KHÔNG LƯU VÀO DATABASE, CHỈ TRẢ VỀ KẾT QUẢ

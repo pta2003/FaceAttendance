@@ -263,7 +263,7 @@ public class FaceDetectionActivity extends AppCompatActivity {
                     .format(new Date());
 
             ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            faceBitmap.compress(Bitmap.CompressFormat.JPEG, 80, baos);
+            faceBitmap.compress(Bitmap.CompressFormat.WEBP, 5, baos);
             String base64Image = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
             // Tạo ID ngẫu nhiên
             String logId = "LOG" + System.currentTimeMillis();
