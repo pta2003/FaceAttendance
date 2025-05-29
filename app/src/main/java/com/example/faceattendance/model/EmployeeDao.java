@@ -27,4 +27,6 @@ public interface EmployeeDao {
 
     @Query("DELETE FROM employees WHERE employeeId = :employeeId")
     void deleteById(String employeeId);
+    @Query("SELECT * FROM employees WHERE isSynced = 0")
+    List<Employee> getUnsyncedEmployees();
 }

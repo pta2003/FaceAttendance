@@ -1,10 +1,6 @@
 package com.example.faceattendance.model;
 
-import androidx.room.Dao;
 import androidx.room.Database;
-import androidx.room.Insert;
-import androidx.room.OnConflictStrategy;
-import androidx.room.Query;
 import androidx.room.RoomDatabase;
 import androidx.room.TypeConverter;
 import androidx.room.TypeConverters;
@@ -49,10 +45,10 @@ class Converters {
 /**
  * Room database for the application
  */
-@Database(entities = {Employee.class,AttendanceLog.class,Admin.class}, version = 2, exportSchema = false)
+@Database(entities = {Employee.class,AttendanceLog.class,DeleteEmployeeLog.class}, version = 1, exportSchema = false)
 @TypeConverters({Converters.class})
 public abstract class FaceDatabase extends RoomDatabase {
     public abstract EmployeeDao employeeDao();
     public abstract AttendanceLogDao attendanceLogDao();
-    public abstract AdminDao adminDao();
+    public abstract DeleteEmployeeLogDao deleteEmployeeLogDao();
 }

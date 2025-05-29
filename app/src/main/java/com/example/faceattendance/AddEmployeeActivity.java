@@ -25,7 +25,6 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.room.Room;
 
-import com.example.faceattendance.model.AttendanceLog;
 import com.example.faceattendance.model.Employee;
 import com.example.faceattendance.model.FaceDatabase;
 import com.example.faceattendance.mqtt.MqttCallbackListener;
@@ -335,6 +334,7 @@ public class AddEmployeeActivity extends AppCompatActivity {
             json.put("employeeId", employeeId);
             json.put("employeeName", capturedEmployeeName);
             json.put("faceEmbedding", capturedFaceEmbedding);
+            json.put("faceBase64",capturedBase64Image);
             json.put("timestamp", currentTime);
         } catch (Exception e) {
             Log.e("MQTT_JSON", "JSON creation failed", e);
@@ -348,18 +348,20 @@ public class AddEmployeeActivity extends AppCompatActivity {
         MqttManager mqttManager = new MqttManager();
         String topic = "attendance/add_employee";
 
+        Employee employee = new Employee(employeeIdFinal, employeeNameFinal, capturedFaceEmbedding, timeFinal, imageFinal);
         mqttManager.connectAndSend(topic, json.toString(), new MqttCallbackListener() {
             @Override
             public void onSendSuccess() {
                 Log.d(TAG, "MQTT send add_employee success");
+                employee.setSynced(true);
             }
             @Override
             public void onSendFailure(Exception e) {
                 Log.e(TAG, "MQTT send add_employee failed", e);
+                employee.setSynced(false);
             }
         });
 
-        Employee employee = new Employee(employeeIdFinal, employeeNameFinal, capturedFaceEmbedding, timeFinal, imageFinal);
         faceDatabase.employeeDao().insert(employee);
 
         showCustomToast("Employee registered successfully", 1500);

@@ -2,6 +2,7 @@ package com.example.faceattendance.model;
 
 import androidx.annotation.NonNull;
 import androidx.room.Entity;
+import androidx.room.Ignore;
 import androidx.room.PrimaryKey;
 
 /**
@@ -21,6 +22,17 @@ public class Employee {
 
     private String faceBase64;
 
+    private boolean isSynced;
+
+    public Employee(@NonNull String employeeId, String employeeName, float[] faceEmbedding, String registrationDate, String faceBase64, boolean isSynced) {
+        this.employeeId = employeeId;
+        this.employeeName = employeeName;
+        this.faceEmbedding = faceEmbedding;
+        this.registrationDate = registrationDate;
+        this.faceBase64 = faceBase64;
+        this.isSynced = isSynced;
+    }
+    @Ignore
     public Employee(@NonNull String employeeId, String employeeName, float[] faceEmbedding, String registrationDate, String faceBase64) {
         this.employeeId = employeeId;
         this.employeeName = employeeName;
@@ -60,6 +72,12 @@ public class Employee {
 
     public void setRegistrationDate(String registrationDate) {
         this.registrationDate = registrationDate;
+    }
+    public boolean isSynced() {
+        return isSynced;
+    }
+    public void setSynced(boolean synced) {
+        isSynced = synced;
     }
     public String getFaceBase64() {
         return faceBase64;

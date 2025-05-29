@@ -1,7 +1,7 @@
 package com.example.faceattendance.utils;
 
 import com.google.mlkit.vision.face.Face;
-import com.google.mlkit.vision.face.FaceLandmark;
+
 
 /**
  * Helper class for liveness detection

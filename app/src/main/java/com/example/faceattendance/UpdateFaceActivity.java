@@ -23,7 +23,6 @@ import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
 import androidx.room.Room;
 
-import com.example.faceattendance.model.Employee;
 import com.example.faceattendance.model.FaceDatabase;
 import com.example.faceattendance.utils.FaceRecognitionHelper;
 import com.example.faceattendance.utils.LivenessDetector;

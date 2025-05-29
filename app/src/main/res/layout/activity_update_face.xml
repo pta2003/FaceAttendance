@@ -29,19 +29,6 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/statusTextView"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:background="#80000000"
-        android:padding="16dp"
-        android:text="Đặt khuôn mặt trong khung oval và mỉm cười"
-        android:textColor="#FFFFFF"
-        android:textSize="16sp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
-
-    <TextView
         android:id="@+id/employeeInfoTextView"
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -49,11 +36,10 @@
         android:layout_marginTop="16dp"
         android:layout_marginEnd="16dp"
         android:text="Cập nhật khuôn mặt cho: "
-        android:textColor="#FFFFFF"
-        android:textSize="18sp"
-        android:textStyle="bold"
+        android:textColor="#000000"
+        android:textSize="16sp"
         android:padding="12dp"
-        android:background="#AA000000"
+        android:background="#AAFFFFFF"
         app:layout_constraintEnd_toStartOf="@+id/captureButton"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
@@ -68,6 +54,22 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
+    <TextView
+        android:id="@+id/statusTextView"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="#80000000"
+        android:padding="16dp"
+        android:text="Đặt khuôn mặt trong khung oval và mỉm cười"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:gravity="center"
+        android:layout_marginHorizontal="32dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/employeeInfoTextView" />
+
     <Button
         android:id="@+id/backButton"
         android:layout_width="wrap_content"
@@ -75,6 +77,6 @@
         android:layout_margin="16dp"
         android:text="Quay lại"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintBottom_toTopOf="@+id/statusTextView" />
+        app:layout_constraintBottom_toBottomOf="parent" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

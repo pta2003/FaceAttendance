@@ -9,13 +9,12 @@ import com.hivemq.client.mqtt.mqtt3.Mqtt3AsyncClient;
 
 import java.nio.charset.StandardCharsets;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
+
 
 public class MqttManager {
     private static final String TAG = "MqttManager";
     private static final String BROKER_HOST = "broker.hivemq.com";
     private static final int BROKER_PORT = 1883;
-    //private static final String TOPIC = "attendance/logs";
     private static final long TIMEOUT = 5 * 60 * 1000; // 5 phút
 
     private final Mqtt3AsyncClient mqttClient;

@@ -51,6 +51,9 @@ public class AttendanceLogAdapter extends RecyclerView.Adapter<AttendanceLogAdap
         String timeOnly = extractTimeOnly(log.timestamp);
         holder.tvTimeOnly.setText(timeOnly);
 
+        // Set sync status icon
+        setSyncStatusIcon(holder.ivSyncStatus, log.isSynced);
+
         // Decode Base64 image
         if (log.faceBase64 != null && !log.faceBase64.isEmpty()) {
             try {
@@ -90,6 +93,25 @@ public class AttendanceLogAdapter extends RecyclerView.Adapter<AttendanceLogAdap
         notifyDataSetChanged();
     }
 
+    // Method to set sync status icon based on isSynced value
+    private void setSyncStatusIcon(ImageView ivSyncStatus, boolean isSynced) {
+        if (isSynced) {
+            // Hiển thị icon tick xanh khi đã đồng bộ
+            ivSyncStatus.setImageResource(R.drawable.ic_check_circle);
+        } else {
+            // Hiển thị icon X đỏ khi chưa đồng bộ
+            ivSyncStatus.setImageResource(R.drawable.ic_close_circle);
+        }
+    }
+
+    // Method to update sync status for a specific item
+    public void updateSyncStatus(int position, boolean isSynced) {
+        if (position >= 0 && position < logList.size()) {
+            logList.get(position).isSynced = isSynced;
+            notifyItemChanged(position);
+        }
+    }
+
     private String extractTimeOnly(String timestamp) {
         try {
             SimpleDateFormat inputFormat = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
@@ -100,7 +122,6 @@ public class AttendanceLogAdapter extends RecyclerView.Adapter<AttendanceLogAdap
             return "--:--"; // hoặc trả về "--:--" nếu muốn hiển thị rõ ràng lỗi
         }
     }
-
 
     // Helper method to format timestamp
     private String formatTimestamp(String timestamp) {
@@ -115,8 +136,8 @@ public class AttendanceLogAdapter extends RecyclerView.Adapter<AttendanceLogAdap
     }
 
     public static class LogViewHolder extends RecyclerView.ViewHolder {
-        TextView tvName, tvId, tvTimestamp,tvTimeOnly;
-        ImageView ivFace;
+        TextView tvName, tvId, tvTimestamp, tvTimeOnly;
+        ImageView ivFace, ivSyncStatus;
 
         public LogViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -125,6 +146,7 @@ public class AttendanceLogAdapter extends RecyclerView.Adapter<AttendanceLogAdap
             tvTimestamp = itemView.findViewById(R.id.tvLogTimestamp);
             ivFace = itemView.findViewById(R.id.ivLogFace);
             tvTimeOnly = itemView.findViewById(R.id.tvTimeOnly);
+            ivSyncStatus = itemView.findViewById(R.id.ivSyncStatus);
         }
     }
 }

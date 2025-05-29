@@ -9,6 +9,7 @@ import android.graphics.Color;
 import android.os.Bundle;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.EditorInfo;
 import android.view.inputmethod.InputMethodManager;
@@ -24,15 +25,22 @@ import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.room.Room;
 
+import com.example.faceattendance.model.DeleteEmployeeLog;
 import com.example.faceattendance.model.Employee;
 import com.example.faceattendance.model.FaceDatabase;
+import com.example.faceattendance.mqtt.MqttCallbackListener;
+import com.example.faceattendance.mqtt.MqttManager;
 import com.example.faceattendance.utils.PinInputDialog;
+
+import org.json.JSONObject;
 
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
+import java.util.Date;
 import java.util.Locale;
 
 public class EmployeeDetailActivity extends AppCompatActivity {
+    private static final String TAG = "EmployeeDetailActivity";
 
     private static final int UPDATE_FACE_REQUEST_CODE = 1001;
     private static final String ADMIN_PIN = "123456"; // Cùng PIN với MainActivity
@@ -42,7 +50,7 @@ public class EmployeeDetailActivity extends AppCompatActivity {
     private TextView nameTextView, idTextView, dateTextView;
     private EditText nameEditText, idEditText, dateEditText;
     private ImageView faceImageView;
-    private Button editButton, saveButton, cancelButton, updateFaceButton;
+    private Button editButton, saveButton, cancelButton, updateFaceButton, deleteButton;
     private ImageButton backButton;
     private LinearLayout editButtonsLayout;
 
@@ -93,6 +101,7 @@ public class EmployeeDetailActivity extends AppCompatActivity {
         backButton = findViewById(R.id.backButton);
         editButtonsLayout = findViewById(R.id.editButtonsLayout);
         updateFaceButton = findViewById(R.id.updateFaceButton);
+        deleteButton = findViewById(R.id.deleteButton);
     }
 
     private void setupDatabase() {
@@ -117,6 +126,7 @@ public class EmployeeDetailActivity extends AppCompatActivity {
         saveButton.setOnClickListener(v -> showPinDialogBeforeSave());
         cancelButton.setOnClickListener(v -> showCancelConfirmation());
         updateFaceButton.setOnClickListener(v -> openUpdateFaceActivity());
+        deleteButton.setOnClickListener(v -> showDeleteConfirmation());
 
         // Setup IME action for EditTexts
         nameEditText.setImeOptions(EditorInfo.IME_ACTION_DONE);
@@ -136,6 +146,110 @@ public class EmployeeDetailActivity extends AppCompatActivity {
         dateEditText.setEnabled(false);
         dateEditText.setAlpha(0.6f); // Make it appear disabled
     }
+
+    private void showDeleteConfirmation() {
+        new androidx.appcompat.app.AlertDialog.Builder(this)
+                .setTitle("Xác nhận xóa")
+                .setMessage("Bạn có chắc chắn muốn xóa nhân viên " + currentEmployee.getEmployeeName() + "?\n\nHành động này không thể hoàn tác.")
+                .setPositiveButton("Xóa", (dialog, which) -> showPinDialogBeforeDelete())
+                .setNegativeButton("Hủy", null)
+                .show();
+    }
+
+    private void showPinDialogBeforeDelete() {
+        new PinInputDialog(this, "Nhập mã PIN admin để xóa nhân viên", 6)
+                .setListener(new PinInputDialog.PinInputListener() {
+                    @Override
+                    public void onPinEntered(String pin) {
+                        handlePinInputForDelete(pin);
+                    }
+
+                    @Override
+                    public void onPinCancelled() {
+                        Toast.makeText(EmployeeDetailActivity.this, "Đã hủy xóa nhân viên", Toast.LENGTH_SHORT).show();
+                    }
+                })
+                .show();
+    }
+
+    private void handlePinInputForDelete(String enteredPin) {
+        if (ADMIN_PIN.equals(enteredPin)) {
+            // PIN đúng, thực hiện xóa
+            failedPinAttempts = 0;
+            deleteEmployee();
+        } else {
+            // PIN sai
+            failedPinAttempts++;
+            String message = "Mã PIN sai! (" + failedPinAttempts + "/3)";
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+
+            if (failedPinAttempts >= 3) {
+                // Khóa nút quản lý trong MainActivity và quay về trang chính
+                lockManageButtonInMainActivity();
+                Toast.makeText(this, "Đã nhập sai quá nhiều lần. Tạm khóa chức năng quản lý 1 phút.", Toast.LENGTH_LONG).show();
+
+                // Quay về MainActivity
+                Intent intent = new Intent(this, MainActivity.class);
+                intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+            } else {
+                showPinDialogBeforeDelete();
+            }
+        }
+    }
+
+    private void deleteEmployee() {
+        // Tạo ID ngẫu nhiên
+        String id = "DEL" + System.currentTimeMillis();
+        String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
+                .format(new Date());
+        JSONObject json = new JSONObject();
+        try {
+            json.put("id", id);
+            json.put("deviceId", MainActivity.DEVICE_ID);
+            json.put("employeeId", currentEmployee.getEmployeeId());
+            json.put("employeeName", currentEmployee.getEmployeeName());
+            json.put("timestamp",currentTime);
+        } catch (Exception e) {
+            Log.e("MQTT_JSON", "JSON creation failed", e);
+        }
+
+        MqttManager mqttManager = new MqttManager();
+        String topic = "attendance/delete_employee";
+
+        mqttManager.connectAndSend(topic, json.toString(), new MqttCallbackListener() {
+            @Override
+            public void onSendSuccess() {
+                Log.d(TAG, "MQTT send delete_employee success");
+                try {
+                    // Xóa khỏi database
+                    db.employeeDao().deleteById(currentEmployee.getEmployeeId());
+                    Toast.makeText(EmployeeDetailActivity.this, "Đã xóa nhân viên thành công", Toast.LENGTH_SHORT).show();
+                    // Đóng activity và quay về danh sách
+                    setResult(RESULT_OK);
+                    finish();
+
+                } catch (Exception e) {
+                    Toast.makeText(EmployeeDetailActivity.this, "Lỗi khi xóa nhân viên: " + e.getMessage(), Toast.LENGTH_SHORT).show();
+                    Log.e(TAG, "Delete employee error", e);
+                }
+            }
+            @Override
+            public void onSendFailure(Exception e) {
+                Log.e(TAG, "MQTT send delete_employee failed", e);
+                DeleteEmployeeLog  deleteEmployeeLog = new DeleteEmployeeLog(
+                        id,
+                        MainActivity.DEVICE_ID,
+                        currentEmployee.getEmployeeId(),
+                        currentEmployee.getEmployeeName(),
+                        currentTime,
+                        false);
+                db.deleteEmployeeLogDao().insert(deleteEmployeeLog);
+            }
+        });
+    }
+
 
     private void showPinDialogBeforeSave() {
         String newName = nameEditText.getText().toString().trim();
@@ -299,6 +413,7 @@ public class EmployeeDetailActivity extends AppCompatActivity {
 
         // Hide edit button, show save/cancel buttons
         editButton.setVisibility(View.GONE);
+        deleteButton.setVisibility(View.GONE);
         editButtonsLayout.setVisibility(View.VISIBLE);
 
         // Show update face button in edit mode
@@ -326,6 +441,7 @@ public class EmployeeDetailActivity extends AppCompatActivity {
 
         // Show edit button, hide save/cancel buttons
         editButton.setVisibility(View.VISIBLE);
+        deleteButton.setVisibility(View.VISIBLE);
         editButtonsLayout.setVisibility(View.GONE);
 
         // Hide update face button when not in edit mode
@@ -343,27 +459,53 @@ public class EmployeeDetailActivity extends AppCompatActivity {
             currentEmployee.setFaceEmbedding(tempFaceEmbedding);
             currentEmployee.setFaceBase64(tempFaceBase64);
         }
-
         try {
             // Update in database
             db.employeeDao().update(currentEmployee);
-
             // Clear temp data
             clearTempFaceData();
-
             // Update display
             displayEmployeeInfo();
             loadEmployeeImage(); // Load from database
             exitEditMode();
-
             // Hide keyboard
             hideKeyboard();
-
             Toast.makeText(this, "Cập nhật thành công", Toast.LENGTH_SHORT).show();
         } catch (Exception e) {
             Toast.makeText(this, "Lỗi khi cập nhật: " + e.getMessage(), Toast.LENGTH_SHORT).show();
             e.printStackTrace();
         }
+        // Tạo ID ngẫu nhiên
+        String id = "EDIT" + System.currentTimeMillis();
+
+        JSONObject json = new JSONObject();
+        try {
+            json.put("id", id);
+            json.put("deviceId", MainActivity.DEVICE_ID);
+            json.put("employeeId", currentEmployee.getEmployeeId());
+            json.put("employeeName", newName);
+            if (hasTempFaceData) {
+                json.put("faceEmbedding", tempFaceEmbedding);
+                json.put("faceBase64", tempFaceBase64);
+            }
+        } catch (Exception e) {
+            Log.e("MQTT_JSON", "JSON creation failed", e);
+        }
+
+        MqttManager mqttManager = new MqttManager();
+        String topic = "attendance/edit_employee";
+
+        mqttManager.connectAndSend(topic, json.toString(), new MqttCallbackListener() {
+            @Override
+            public void onSendSuccess() {
+                Log.d(TAG, "MQTT send add_employee success");
+            }
+            @Override
+            public void onSendFailure(Exception e) {
+                Log.e(TAG, "MQTT send add_employee failed", e);
+                currentEmployee.setSynced(false);
+            }
+        });
     }
 
     private void showCancelConfirmation() {
