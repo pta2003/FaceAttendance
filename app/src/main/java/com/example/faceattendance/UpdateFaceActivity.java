@@ -3,7 +3,6 @@ package com.example.faceattendance;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.graphics.Bitmap;
-import android.graphics.Rect;
 import android.media.Image;
 import android.os.Bundle;
 import android.util.Log;
@@ -21,46 +20,40 @@ import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
-import androidx.room.Room;
 
-import com.example.faceattendance.model.FaceDatabase;
-import com.example.faceattendance.utils.FaceRecognitionHelper;
-import com.example.faceattendance.utils.LivenessDetector;
+import com.example.faceattendance.controller.UpdateFaceController;
 import com.example.faceattendance.utils.YuvToRgbConverter;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.face.Face;
-import com.google.mlkit.vision.face.FaceDetection;
-import com.google.mlkit.vision.face.FaceDetector;
-import com.google.mlkit.vision.face.FaceDetectorOptions;
 
-import java.io.ByteArrayOutputStream;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class UpdateFaceActivity extends AppCompatActivity {
+public class UpdateFaceActivity extends AppCompatActivity implements UpdateFaceController.UpdateFaceCallback {
     private static final String TAG = "UpdateFaceActivity";
     public static final String EXTRA_EMPLOYEE_ID = "employeeId";
     public static final String EXTRA_EMPLOYEE_NAME = "employeeName";
 
+    // UI Components
     private PreviewView previewView;
     private TextView statusTextView;
     private TextView employeeInfoTextView;
     private Button captureButton;
     private Button backButton;
 
-    private FaceDetector faceDetector;
+    // Controller
+    private UpdateFaceController controller;
     private ExecutorService cameraExecutor;
-    private FaceRecognitionHelper faceRecognitionHelper;
-    private LivenessDetector livenessDetector;
-    private FaceDatabase faceDatabase;
 
+    // State management
     private boolean isCapturing = false;
     private Face currentFace = null;
     private Bitmap currentBitmap = null;
     private int currentRotationDegrees = 0;
 
+    // Employee info
     private String employeeId;
     private String employeeName;
 
@@ -70,19 +63,29 @@ public class UpdateFaceActivity extends AppCompatActivity {
         setContentView(R.layout.activity_update_face);
 
         // Get employee info from intent
-        employeeId = getIntent().getStringExtra(EXTRA_EMPLOYEE_ID);
-        employeeName = getIntent().getStringExtra(EXTRA_EMPLOYEE_NAME);
-
-        if (employeeId == null || employeeName == null) {
-            Toast.makeText(this, "Thông tin nhân viên không hợp lệ", Toast.LENGTH_SHORT).show();
-            finish();
+        extractEmployeeInfo();
+        if (!validateEmployeeInfo()) {
             return;
         }
 
         initViews();
         setupListeners();
-        initializeComponents();
+        initializeController();
         startCamera();
+    }
+
+    private void extractEmployeeInfo() {
+        employeeId = getIntent().getStringExtra(EXTRA_EMPLOYEE_ID);
+        employeeName = getIntent().getStringExtra(EXTRA_EMPLOYEE_NAME);
+    }
+
+    private boolean validateEmployeeInfo() {
+        if (employeeId == null || employeeName == null) {
+            showToast("Thông tin nhân viên không hợp lệ");
+            finish();
+            return false;
+        }
+        return true;
     }
 
     private void initViews() {
@@ -97,28 +100,23 @@ public class UpdateFaceActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
-        captureButton.setOnClickListener(v -> captureAndUpdateFace());
+        captureButton.setOnClickListener(v -> handleCaptureButtonClick());
         backButton.setOnClickListener(v -> finish());
     }
 
-    private void initializeComponents() {
-        FaceDetectorOptions options = new FaceDetectorOptions.Builder()
-                .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
-                .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
-                .enableTracking()
-                .build();
-        faceDetector = FaceDetection.getClient(options);
-
-        faceRecognitionHelper = new FaceRecognitionHelper(this);
-        livenessDetector = new LivenessDetector();
-
-        faceDatabase = Room.databaseBuilder(getApplicationContext(),
-                        FaceDatabase.class, "face_attendance_db")
-                .fallbackToDestructiveMigration()
-                .allowMainThreadQueries()
-                .build();
-
+    private void initializeController() {
+        controller = new UpdateFaceController(this, this);
         cameraExecutor = Executors.newSingleThreadExecutor();
+    }
+
+    private void handleCaptureButtonClick() {
+        if (currentFace == null || currentBitmap == null) {
+            showToast("Không phát hiện khuôn mặt. Hãy đặt mặt đúng vị trí.");
+            return;
+        }
+
+        isCapturing = true;
+        controller.captureAndProcessFace(currentFace, currentBitmap, currentRotationDegrees);
     }
 
     private void startCamera() {
@@ -130,6 +128,7 @@ public class UpdateFaceActivity extends AppCompatActivity {
                 bindCameraUseCases(cameraProvider);
             } catch (ExecutionException | InterruptedException e) {
                 Log.e(TAG, "Error starting camera", e);
+                showToast("Lỗi khởi động camera");
             }
         }, ContextCompat.getMainExecutor(this));
     }
@@ -177,84 +176,92 @@ public class UpdateFaceActivity extends AppCompatActivity {
 
             InputImage inputImage = InputImage.fromBitmap(bitmap, rotationDegrees);
 
-            faceDetector.process(inputImage)
+            controller.getFaceDetector().process(inputImage)
                     .addOnSuccessListener(faces -> {
-                        if (faces.isEmpty()) {
-                            updateStatus("Không phát hiện khuôn mặt. Hãy đặt mặt trong khung oval.");
-                            currentFace = null;
-                        } else if (faces.size() > 1) {
-                            updateStatus("Phát hiện nhiều khuôn mặt. Chỉ để một khuôn mặt trong khung hình.");
-                            currentFace = null;
-                        } else {
-                            currentFace = faces.get(0);
-                            currentBitmap = bitmap;
-                            currentRotationDegrees = rotationDegrees;
-
-                            updateStatus("Đã phát hiện khuôn mặt. Hãy mỉm cười và nháy mắt.");
-
-                            livenessDetector.processFace(currentFace);
-                            if (livenessDetector.isSmileDetected()) {
-                                updateStatus("Đã phát hiện nụ cười! " +
-                                        (livenessDetector.isBlinkDetected() ? "Đã nháy mắt!" : "Hãy nháy mắt."));
-                            }
-                        }
+                        controller.processFaces(faces, bitmap, rotationDegrees);
                         imageProxy.close();
                     })
                     .addOnFailureListener(e -> {
                         Log.e(TAG, "Face detection failed", e);
+                        onFaceProcessingError("Lỗi phát hiện khuôn mặt");
                         imageProxy.close();
                     });
         }
     }
-// Trong UpdateFaceActivity - Thay đổi method captureAndUpdateFace()
 
-    private void captureAndUpdateFace() {
-        if (currentFace == null || currentBitmap == null) {
-            Toast.makeText(this, "Không phát hiện khuôn mặt. Hãy đặt mặt đúng vị trí.", Toast.LENGTH_LONG).show();
-            return;
-        }
-
-        isCapturing = true;
-
-        Rect bounds = currentFace.getBoundingBox();
-        Bitmap faceBitmap = faceRecognitionHelper.cropFace(currentBitmap, bounds, currentRotationDegrees);
-
-        float[] faceEmbedding = faceRecognitionHelper.getFaceEmbedding(faceBitmap);
-        if (faceEmbedding == null) {
-            Toast.makeText(this, "Không thể trích xuất đặc trưng khuôn mặt. Hãy thử lại.", Toast.LENGTH_LONG).show();
-            isCapturing = false;
-            return;
-        }
-
-        // Convert face bitmap to base64
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        faceBitmap.compress(Bitmap.CompressFormat.WEBP, 10, baos);
-        String base64Image = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
-
-        // KHÔNG LƯU VÀO DATABASE, CHỈ TRẢ VỀ KẾT QUẢ
-        Toast.makeText(this, "Chụp ảnh thành công!", Toast.LENGTH_SHORT).show();
-        updateStatus("Ảnh khuôn mặt đã được cập nhật. Nhấn Lưu để hoàn tất.");
-
-        // Return result to parent activity
-        Intent resultIntent = new Intent();
-        resultIntent.putExtra("updated", true);
-        resultIntent.putExtra("newFaceEmbedding", faceEmbedding);
-        resultIntent.putExtra("newFaceBase64", base64Image);
-        setResult(RESULT_OK, resultIntent);
-
-        statusTextView.postDelayed(() -> {
-            finish();
-        }, 1500);
+    // Controller callback implementations
+    @Override
+    public void onStatusUpdate(String message) {
+        runOnUiThread(() -> statusTextView.setText(message));
     }
 
-    private void updateStatus(String message) {
-        runOnUiThread(() -> statusTextView.setText(message));
+    @Override
+    public void onFaceDetected(Face face, Bitmap bitmap, int rotationDegrees) {
+        currentFace = face;
+        currentBitmap = bitmap;
+        currentRotationDegrees = rotationDegrees;
+    }
+
+    @Override
+    public void onNoFaceDetected() {
+        currentFace = null;
+        currentBitmap = null;
+    }
+
+    @Override
+    public void onMultipleFacesDetected() {
+        currentFace = null;
+        currentBitmap = null;
+    }
+
+    @Override
+    public void onFaceProcessingError(String error) {
+        runOnUiThread(() -> showToast(error));
+    }
+
+    @Override
+    public void onFaceCaptureSuccess(float[] faceEmbedding, String base64Image) {
+        runOnUiThread(() -> {
+            showToast("Chụp ảnh thành công!");
+
+            // Return result to parent activity
+            Intent resultIntent = new Intent();
+            resultIntent.putExtra("updated", true);
+            resultIntent.putExtra("newFaceEmbedding", faceEmbedding);
+            resultIntent.putExtra("newFaceBase64", base64Image);
+            setResult(RESULT_OK, resultIntent);
+
+            // Delay finish to show success message
+            statusTextView.postDelayed(this::finish, 1500);
+        });
+    }
+
+    @Override
+    public void onFaceCaptureError(String error) {
+        runOnUiThread(() -> {
+            showToast(error);
+            isCapturing = false;
+        });
+    }
+
+    @Override
+    public void onLivenessDetected(boolean smileDetected, boolean blinkDetected) {
+        // Additional UI feedback can be added here if needed
+        // For now, status updates are handled in the controller
+    }
+
+    private void showToast(String message) {
+        Toast.makeText(this, message, Toast.LENGTH_LONG).show();
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        cameraExecutor.shutdown();
-        faceRecognitionHelper.close();
+        if (cameraExecutor != null) {
+            cameraExecutor.shutdown();
+        }
+        if (controller != null) {
+            controller.cleanup();
+        }
     }
 }

@@ -1,15 +1,14 @@
 package com.example.faceattendance;
 
 import android.annotation.SuppressLint;
-
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
-import android.graphics.ImageFormat;
-import android.graphics.Rect;
-import android.graphics.YuvImage;
+import android.app.AlertDialog;
+import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Log;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 
@@ -24,16 +23,8 @@ import androidx.camera.core.Preview;
 import androidx.camera.lifecycle.ProcessCameraProvider;
 import androidx.camera.view.PreviewView;
 import androidx.core.content.ContextCompat;
-import androidx.room.Room;
 
-import com.example.faceattendance.model.AttendanceLog;
-import com.example.faceattendance.model.Employee;
-import com.example.faceattendance.model.FaceDatabase;
-import com.example.faceattendance.mqtt.MqttCallbackListener;
-import com.example.faceattendance.mqtt.MqttManager;
-import com.example.faceattendance.utils.FaceRecognitionHelper;
-import com.example.faceattendance.utils.LivenessDetector;
-
+import com.example.faceattendance.controller.FaceDetectionController;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.mlkit.vision.common.InputImage;
 import com.google.mlkit.vision.face.Face;
@@ -41,81 +32,82 @@ import com.google.mlkit.vision.face.FaceDetection;
 import com.google.mlkit.vision.face.FaceDetector;
 import com.google.mlkit.vision.face.FaceDetectorOptions;
 
-import org.json.JSONObject;
-
-import java.io.ByteArrayOutputStream;
-import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
-import java.util.Date;
 import java.util.List;
-import java.util.Locale;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class FaceDetectionActivity extends AppCompatActivity {
-    private static final String TAG = "FaceDetectionTAG";
+public class FaceDetectionActivity extends AppCompatActivity implements FaceDetectionController.FaceDetectionListener {
+    private static final String TAG = "FaceDetectionActivity";
 
+    // UI Components
     private PreviewView previewView;
     private TextView statusTextView;
+    private Button backButton;
+
+    // Camera related
     private FaceDetector faceDetector;
     private ExecutorService cameraExecutor;
-    private FaceRecognitionHelper faceRecognitionHelper;
-    private LivenessDetector livenessDetector;
-    private FaceDatabase faceDatabase;
+
+    // Controller
+    private FaceDetectionController controller;
+
+    // Handler for delayed actions
     private Handler handler = new Handler();
     private Runnable returnToMainRunnable;
 
-    private enum DetectionState {
-        WAITING_FOR_FACE,
-        CHECKING_LIVENESS,
-        IDENTIFYING_FACE,
-        COMPLETED
-    }
-
-    private DetectionState currentState = DetectionState.WAITING_FOR_FACE;
-    private boolean processingFrame = false;
+    // Dialog
+    private AlertDialog resultDialog;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_face_detection);
 
+        initializeViews();
+        initializeController();
+        initializeFaceDetector();
+        initializeCameraExecutor();
+        setupBackButtonHandling();
+        startCamera();
+    }
+
+    private void initializeViews() {
         previewView = findViewById(R.id.previewView);
         statusTextView = findViewById(R.id.statusTextView);
-        Button backButton = findViewById(R.id.backButton);
+        backButton = findViewById(R.id.backButton);
+
         backButton.setOnClickListener(v -> {
-            handler.removeCallbacks(returnToMainRunnable);
+            cleanup();
             finish();
         });
+    }
 
-        // Xử lý nút back hệ thống bằng dispatcher mới
-        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                handler.removeCallbacks(returnToMainRunnable);
-                finish();
-            }
-        });
+    private void initializeController() {
+        controller = new FaceDetectionController(this, this);
+    }
 
+    private void initializeFaceDetector() {
         FaceDetectorOptions options = new FaceDetectorOptions.Builder()
                 .setPerformanceMode(FaceDetectorOptions.PERFORMANCE_MODE_ACCURATE)
                 .setClassificationMode(FaceDetectorOptions.CLASSIFICATION_MODE_ALL)
                 .enableTracking()
                 .build();
         faceDetector = FaceDetection.getClient(options);
+    }
 
-        faceRecognitionHelper = new FaceRecognitionHelper(this);
-        livenessDetector = new LivenessDetector();
-
-        faceDatabase = Room.databaseBuilder(getApplicationContext(),
-                        FaceDatabase.class, "face_attendance_db")
-                .fallbackToDestructiveMigration()
-                .allowMainThreadQueries()
-                .build();
-
+    private void initializeCameraExecutor() {
         cameraExecutor = Executors.newSingleThreadExecutor();
-        startCamera();
+    }
+
+    private void setupBackButtonHandling() {
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                cleanup();
+                finish();
+            }
+        });
     }
 
     private void startCamera() {
@@ -151,11 +143,13 @@ public class FaceDetectionActivity extends AppCompatActivity {
         @SuppressLint("UnsafeOptInUsageError")
         @Override
         public void analyze(@NonNull ImageProxy imageProxy) {
-            if (processingFrame || currentState == DetectionState.COMPLETED) {
+            if (controller.isProcessingFrame() ||
+                    controller.getCurrentState() == FaceDetectionController.DetectionState.COMPLETED) {
                 imageProxy.close();
                 return;
             }
-            processingFrame = true;
+
+            controller.setProcessingFrame(true);
 
             InputImage inputImage = InputImage.fromMediaImage(
                     imageProxy.getImage(),
@@ -163,222 +157,153 @@ public class FaceDetectionActivity extends AppCompatActivity {
 
             faceDetector.process(inputImage)
                     .addOnSuccessListener(faces -> {
-                        if (faces.isEmpty()) {
-                            updateStatus("No face detected. Position your face within the oval.");
-                            currentState = DetectionState.WAITING_FOR_FACE;
-                            processingFrame = false;
-                            imageProxy.close();
-                        } else if (faces.size() > 1) {
-                            updateStatus("Multiple faces detected. Please ensure only one face is visible.");
-                            processingFrame = false;
-                            imageProxy.close();
-                        } else {
-                            processFace(faces.get(0), imageProxy);
-                        }
-                        processingFrame = false;
+                        handleFaceDetectionResult(faces, imageProxy);
+                        controller.setProcessingFrame(false);
                     })
                     .addOnFailureListener(e -> {
                         Log.e(TAG, "Face detection failed", e);
-                        processingFrame = false;
+                        controller.setProcessingFrame(false);
                         imageProxy.close();
                     });
         }
     }
 
-    private void processFace(Face face, ImageProxy imageProxy) {
-        switch (currentState) {
-            case WAITING_FOR_FACE:
-                currentState = DetectionState.CHECKING_LIVENESS;
-                livenessDetector.reset();
-                updateStatus("Liveness check: " + livenessDetector.getStatusMessage());
-                break;
-
-            case CHECKING_LIVENESS:
-                livenessDetector.processFace(face);
-                updateStatus("Liveness check: " + livenessDetector.getStatusMessage());
-
-                if (livenessDetector.isLivenessVerified()) {
-                    currentState = DetectionState.IDENTIFYING_FACE;
-                    updateStatus("Liveness verified. Identifying face...");
-                    identifyFace(face, imageProxy);
-                }
-                break;
-
-            case IDENTIFYING_FACE:
-                break;
-
-            case COMPLETED:
-                reset();
-                break;
-        }
-        imageProxy.close();  // Chỉ đóng khi xử lý xong
-    }
-
-    private void identifyFace(Face face, ImageProxy imageProxy) {
-        Bitmap originalBitmap = imageProxyToBitmap(imageProxy);
-        if (originalBitmap == null) {
-            updateStatus("Failed to process image. Please try again.");
-            reset();
-            return;
-        }
-
-        Rect bounds = face.getBoundingBox();
-        Bitmap faceBitmap = faceRecognitionHelper.cropFace(
-                originalBitmap,
-                bounds,
-                imageProxy.getImageInfo().getRotationDegrees()
-        );
-
-        float[] faceEmbedding = faceRecognitionHelper.getFaceEmbedding(faceBitmap);
-        if (faceEmbedding == null) {
-            updateStatus("Failed to extract face features. Please try again.");
-            reset();
-            return;
-        }
-
-        List<Employee> employees = faceDatabase.employeeDao().getAllEmployees();
-        if (employees.isEmpty()) {
-            updateStatus("No registered employees found. Please register faces first.");
-            currentState = DetectionState.COMPLETED;
-            return;
-        }
-
-        String matchedEmployeeId = null;
-        String matchedEmployeeName = null;
-        //Employee matchedEmployee = null;
-        float bestSimilarity = 0;
-
-        for (Employee employee : employees) {
-            float similarity = faceRecognitionHelper.calculateSimilarity(faceEmbedding, employee.getFaceEmbedding());
-            if (similarity > bestSimilarity) {
-                bestSimilarity = similarity;
-                matchedEmployeeId = employee.getEmployeeId();
-                matchedEmployeeName = employee.getEmployeeName();
-                //matchedEmployee = employee;
-            }
-        }
-
-        if (matchedEmployeeId != null && bestSimilarity > 0.6) {
-            String currentTime = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault())
-                    .format(new Date());
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            faceBitmap.compress(Bitmap.CompressFormat.WEBP, 5, baos);
-            String base64Image = android.util.Base64.encodeToString(baos.toByteArray(), android.util.Base64.NO_WRAP);
-            // Tạo ID ngẫu nhiên
-            String logId = "LOG" + System.currentTimeMillis();
-            JSONObject json = new JSONObject();//logId,employeeId,employeeName,timestamp,faceBase64
-            try {
-                json.put("id",logId);
-                json.put("deviceId",MainActivity.DEVICE_ID);
-                json.put("employeeId", matchedEmployeeId);
-                json.put("employeeName",matchedEmployeeName);
-                json.put("timestamp", currentTime);
-                json.put("faceBase64", base64Image);
-            } catch (Exception e) {
-                Log.e("MQTT_JSON", "JSON creation failed", e);
-            }
-            final String logIdFinal = logId;
-            final String employeeIdFinal = matchedEmployeeId;
-            final String employeeNameFinal = matchedEmployeeName;
-            final String timeFinal = currentTime;
-            final String imageFinal = base64Image;
-
-            MqttManager mqttManager = new MqttManager();
-            String topic = "attendance/logs";
-            mqttManager.connectAndSend(topic, json.toString(), new MqttCallbackListener() {
-                @Override
-                public void onSendSuccess() {
-                    //String logId,String employeeId,String employeeName, String timestamp, String faceBase64, boolean isSynced
-                    Log.d(TAG, "MQTT send success");
-                    AttendanceLog log = new AttendanceLog(
-                            logIdFinal,
-                            employeeIdFinal,
-                            employeeNameFinal,
-                            timeFinal,
-                            imageFinal,
-                            true
-                    );
-                    faceDatabase.attendanceLogDao().insert(log);
-                }
-
-                @Override
-                public void onSendFailure(Exception e) {
-                    Log.e(TAG, "MQTT send failed, saving log", e);
-                    AttendanceLog log = new AttendanceLog(
-                            logIdFinal,
-                            employeeIdFinal,
-                            employeeNameFinal,
-                            timeFinal,
-                            imageFinal,
-                            false
-                    );
-                    faceDatabase.attendanceLogDao().insert(log);
-                }
-            });
-
-
-            updateStatus("Attendance recorded for employee " + matchedEmployeeName + "(ID: " + matchedEmployeeId + " ) at " + currentTime);
+    private void handleFaceDetectionResult(List<Face> faces, ImageProxy imageProxy) {
+        if (faces.isEmpty()) {
+            controller.handleNoFaceDetected();
+            imageProxy.close();
+        } else if (faces.size() > 1) {
+            controller.handleMultipleFaces();
+            imageProxy.close();
         } else {
-            updateStatus("Face not recognized. Please register or try again.");
+            controller.processFace(faces.get(0), imageProxy);
+            imageProxy.close();
         }
-
-
-        currentState = DetectionState.COMPLETED;
-        returnToMainRunnable = this::finish;
-        handler.postDelayed(returnToMainRunnable, 2000);
     }
 
-
-    private Bitmap imageProxyToBitmap(ImageProxy imageProxy) {
-        ImageProxy.PlaneProxy[] planes = imageProxy.getPlanes();
-        ByteBuffer yBuffer = planes[0].getBuffer();
-        ByteBuffer uBuffer = planes[1].getBuffer();
-        ByteBuffer vBuffer = planes[2].getBuffer();
-
-        int ySize = yBuffer.remaining();
-        int uSize = uBuffer.remaining();
-        int vSize = vBuffer.remaining();
-
-        byte[] nv21 = new byte[ySize + uSize + vSize];
-        yBuffer.get(nv21, 0, ySize);
-        vBuffer.get(nv21, ySize, vSize);
-        uBuffer.get(nv21, ySize + vSize, uSize);
-
-        YuvImage yuvImage = new YuvImage(
-                nv21,
-                ImageFormat.NV21,
-                imageProxy.getWidth(),
-                imageProxy.getHeight(),
-                null
-        );
-
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
-        yuvImage.compressToJpeg(
-                new Rect(0, 0, yuvImage.getWidth(), yuvImage.getHeight()),
-                100,
-                out
-        );
-        byte[] jpegBytes = out.toByteArray();
-        return BitmapFactory.decodeByteArray(jpegBytes, 0, jpegBytes.length);
-    }
-
-    private void updateStatus(String message) {
+    // FaceDetectionController.FaceDetectionListener implementations
+    @Override
+    public void onStatusUpdate(String message) {
         runOnUiThread(() -> statusTextView.setText(message));
     }
 
-    private void reset() {
+    @Override
+    public void onDetectionCompleted() {
+        // Không cần auto return về main nữa vì sẽ có dialog
+    }
+
+    @Override
+    public void onDetectionReset() {
         statusTextView.postDelayed(() -> {
-            currentState = DetectionState.WAITING_FOR_FACE;
-            updateStatus("Position your face within the oval");
+            onStatusUpdate("Position your face within the oval");
         }, 3000);
+    }
+
+    @Override
+    public void onAttendanceSuccess(String employeeName, String employeeId, String time) {
+        runOnUiThread(() -> showSuccessDialog(employeeName, employeeId, time));
+    }
+
+    @Override
+    public void onAttendanceFailure(String reason) {
+        runOnUiThread(() -> showFailureDialog(reason));
+    }
+
+    private void showSuccessDialog(String employeeName, String employeeId, String time) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_attendance_result, null);
+
+        TextView iconTextView = dialogView.findViewById(R.id.iconTextView);
+        TextView titleTextView = dialogView.findViewById(R.id.titleTextView);
+        TextView messageTextView = dialogView.findViewById(R.id.messageTextView);
+        Button actionButton = dialogView.findViewById(R.id.actionButton);
+
+        // Setup success dialog
+        iconTextView.setText("✓");
+        iconTextView.setTextColor(Color.GREEN);
+        titleTextView.setText("Chấm công thành công!");
+        titleTextView.setTextColor(Color.GREEN);
+        messageTextView.setText("Nhân viên: " + employeeName + "\nID: " + employeeId + "\nThời gian: " + time);
+        actionButton.setText("Trở về");
+        actionButton.setBackgroundColor(Color.GREEN);
+
+        actionButton.setOnClickListener(v -> {
+            if (resultDialog != null) {
+                resultDialog.dismiss();
+            }
+            finish();
+        });
+
+        builder.setView(dialogView);
+        resultDialog = builder.create();
+
+        // Make dialog background transparent for custom styling
+        if (resultDialog.getWindow() != null) {
+            resultDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        resultDialog.setCancelable(false);
+        resultDialog.show();
+    }
+
+    private void showFailureDialog(String reason) {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        View dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_attendance_result, null);
+
+        TextView iconTextView = dialogView.findViewById(R.id.iconTextView);
+        TextView titleTextView = dialogView.findViewById(R.id.titleTextView);
+        TextView messageTextView = dialogView.findViewById(R.id.messageTextView);
+        Button actionButton = dialogView.findViewById(R.id.actionButton);
+
+        // Setup failure dialog
+        iconTextView.setText("✗");
+        iconTextView.setTextColor(Color.RED);
+        titleTextView.setText("Chấm công thất bại!");
+        titleTextView.setTextColor(Color.RED);
+        messageTextView.setText("Lỗi: " + reason);
+        actionButton.setText("Thử lại");
+        actionButton.setBackgroundColor(Color.RED);
+
+        actionButton.setOnClickListener(v -> {
+            if (resultDialog != null) {
+                resultDialog.dismiss();
+            }
+            controller.reset();
+        });
+
+        builder.setView(dialogView);
+        resultDialog = builder.create();
+
+        // Make dialog background transparent for custom styling
+        if (resultDialog.getWindow() != null) {
+            resultDialog.getWindow().setBackgroundDrawable(new ColorDrawable(Color.TRANSPARENT));
+        }
+
+        resultDialog.setCancelable(false);
+        resultDialog.show();
+    }
+
+    private void cleanup() {
+        if (handler != null && returnToMainRunnable != null) {
+            handler.removeCallbacks(returnToMainRunnable);
+        }
+
+        if (resultDialog != null && resultDialog.isShowing()) {
+            resultDialog.dismiss();
+        }
     }
 
     @Override
     protected void onDestroy() {
         super.onDestroy();
-        handler.removeCallbacks(returnToMainRunnable);
-        cameraExecutor.shutdown();
-        faceRecognitionHelper.close();
+        cleanup();
+
+        if (cameraExecutor != null) {
+            cameraExecutor.shutdown();
+        }
+
+        if (controller != null) {
+            controller.onDestroy();
+        }
     }
 }

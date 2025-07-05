@@ -3,6 +3,7 @@ package com.example.faceattendance.model;
 import androidx.room.Dao;
 import androidx.room.Insert;
 import androidx.room.Query;
+import androidx.room.Update;
 
 import java.util.List;
 
@@ -10,6 +11,9 @@ import java.util.List;
 public interface AttendanceLogDao {
     @Insert
     void insert(AttendanceLog log);
+
+    @Update
+    void update(AttendanceLog log);
 
     @Query("SELECT * FROM AttendanceLog ORDER BY timestamp DESC")
     List<AttendanceLog> getAllLogs();
