@@ -39,7 +39,8 @@ public class EmployeeDetailActivity extends AppCompatActivity implements Employe
     private TextView nameTextView, idTextView, dateTextView;
     private EditText nameEditText, idEditText, dateEditText;
     private ImageView faceImageView;
-    private Button editButton, saveButton, cancelButton, updateFaceButton, deleteButton;
+    private ImageButton editButton,deleteButton;
+    private Button saveButton, cancelButton, updateFaceButton;
     private ImageButton backButton;
     private LinearLayout editButtonsLayout;
 

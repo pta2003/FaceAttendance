@@ -1,81 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:background="#FFFFFF">
+    android:background="#F8F9FA">
 
-    <!-- Header với nút Back -->
-    <LinearLayout
+    <!-- Header với gradient background -->
+    <RelativeLayout
         android:id="@+id/headerLayout"
         android:layout_width="match_parent"
-        android:layout_height="80dp"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingStart="12dp"
-        android:paddingEnd="16dp"
-        android:paddingTop="24dp"
-        android:background="#FFFFFF"
-        android:elevation="2dp">
+        android:layout_height="wrap_content"
+        android:background="@drawable/header_gradient_background"
+        android:padding="20dp"
+        android:elevation="4dp">
 
         <ImageButton
             android:id="@+id/backButton"
-            android:layout_width="48dp"
-            android:layout_height="48dp"
-            android:background="?attr/selectableItemBackgroundBorderless"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:layout_centerVertical="true"
+            android:layout_alignParentStart="true"
             android:src="@android:drawable/ic_menu_revert"
-            android:contentDescription="Quay lại" />
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Quay lại"
+            android:padding="8dp"
+            app:tint="#FFFFFF" />
 
         <TextView
-            android:layout_width="0dp"
+            android:id="@+id/headerTitle"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="Chi tiết"
-            android:textColor="#333333"
-            android:textSize="18sp"
+            android:layout_centerVertical="true"
+            android:layout_toEndOf="@id/backButton"
+            android:layout_marginStart="16dp"
+            android:text="Thông tin chi tiết"
+            android:textSize="22sp"
             android:textStyle="bold"
-            android:layout_marginStart="8dp" />
+            android:textColor="#FFFFFF"
+            android:fontFamily="sans-serif-medium" />
 
-        <!-- Nút Xóa -->
-        <Button
-            android:id="@+id/deleteButton"
+        <!-- Nút Xóa và Sửa dưới dạng icon -->
+        <LinearLayout
             android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:text="Xóa"
-            android:textColor="#FF3B30"
-            android:textSize="16sp"
-            android:background="?attr/selectableItemBackground"
-            android:minWidth="0dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp"
-            android:layout_marginEnd="8dp" />
+            android:layout_height="wrap_content"
+            android:layout_centerVertical="true"
+            android:layout_toEndOf="@id/headerTitle"
+            android:layout_marginStart="16dp"
+            android:orientation="horizontal">
 
-        <Button
-            android:id="@+id/editButton"
-            android:layout_width="wrap_content"
-            android:layout_height="48dp"
-            android:text="Sửa"
-            android:textColor="#007AFF"
-            android:textSize="16sp"
-            android:background="?attr/selectableItemBackground"
-            android:minWidth="0dp"
-            android:paddingStart="16dp"
-            android:paddingEnd="16dp" />
+            <ImageButton
+                android:id="@+id/editButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:src="@android:drawable/ic_menu_edit"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Sửa"
+                android:padding="12dp"
+                app:tint="#FFFFFF" />
 
-    </LinearLayout>
+            <ImageButton
+                android:id="@+id/deleteButton"
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                android:background="?android:attr/selectableItemBackgroundBorderless"
+                android:contentDescription="Xóa"
+                android:padding="6dp"
+                android:src="@drawable/delete"
+                app:tint="#FF3B30" />
 
-    <!-- Đường phân cách -->
-    <View
-        android:id="@+id/divider"
-        android:layout_width="match_parent"
-        android:layout_height="1dp"
-        android:layout_below="@id/headerLayout"
-        android:background="#E0E0E0" />
+        </LinearLayout>
+
+    </RelativeLayout>
 
     <!-- Nội dung chính -->
     <ScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_below="@id/divider"
+        android:layout_below="@id/headerLayout"
         android:layout_above="@id/editButtonsLayout">
 
         <LinearLayout
@@ -91,7 +92,7 @@
                 android:gravity="center"
                 android:paddingTop="32dp"
                 android:paddingBottom="32dp"
-                android:background="#FAFAFA">
+                android:background="#FFFFFF">
 
                 <ImageView
                     android:id="@+id/faceImageView"
@@ -122,7 +123,9 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:orientation="vertical"
-                android:padding="20dp">
+                android:padding="20dp"
+                android:background="#FFFFFF"
+                android:layout_marginTop="8dp">
 
                 <!-- Tên -->
                 <LinearLayout

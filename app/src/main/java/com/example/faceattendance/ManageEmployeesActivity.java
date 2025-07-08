@@ -2,6 +2,8 @@ package com.example.faceattendance;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.ImageButton;
 
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
@@ -21,6 +23,7 @@ public class ManageEmployeesActivity extends AppCompatActivity {
     private RecyclerView recyclerView;
     private EmployeeAdapter adapter;
     private FaceDatabase faceDatabase;
+    private ImageButton btnBack;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -28,6 +31,8 @@ public class ManageEmployeesActivity extends AppCompatActivity {
         setContentView(R.layout.activity_manage_employees);
 
         recyclerView = findViewById(R.id.recyclerViewEmployees);
+        btnBack = findViewById(R.id.btnBack);
+
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
 
         // Initialize database
@@ -36,6 +41,18 @@ public class ManageEmployeesActivity extends AppCompatActivity {
                 .fallbackToDestructiveMigration()
                 .allowMainThreadQueries()
                 .build();
+
+        // Setup back button
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Quay về MainActivity
+                Intent intent = new Intent(ManageEmployeesActivity.this, AdminDashboardActivity.class);
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+            }
+        });
 
         loadEmployeeList();
     }
@@ -63,5 +80,15 @@ public class ManageEmployeesActivity extends AppCompatActivity {
             // Reload danh sách nhân viên khi có thay đổi
             loadEmployeeList();
         }
+    }
+
+    @Override
+    public void onBackPressed() {
+        // Xử lý khi nhấn nút back của hệ thống
+        super.onBackPressed();
+        Intent intent = new Intent(ManageEmployeesActivity.this, AdminDashboardActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
     }
 }

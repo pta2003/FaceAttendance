@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:orientation="vertical"
@@ -11,11 +12,26 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
+        android:orientation="horizontal"
         android:background="@drawable/header_gradient_background"
-        android:padding="24dp"
-        android:elevation="4dp">
+        android:padding="16dp"
+        android:elevation="4dp"
+        android:gravity="center_vertical">
 
+        <!-- Nút quay lại -->
+        <ImageButton
+            android:id="@+id/btnBack"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_marginEnd="16dp"
+            android:background="?android:attr/selectableItemBackgroundBorderless"
+            android:src="@android:drawable/ic_menu_revert"
+            android:contentDescription="Quay lại"
+            android:scaleType="centerInside"
+            android:padding="12dp"
+            app:tint="#FFFFFF" />
+
+        <!-- Tiêu đề -->
         <TextView
             android:id="@+id/historyTitle"
             android:layout_width="wrap_content"
@@ -23,8 +39,7 @@
             android:text="Lịch sử chấm công"
             android:textSize="24sp"
             android:textStyle="bold"
-            android:textColor="#FFFFFF"
-            android:layout_marginBottom="4dp" />
+            android:textColor="#FFFFFF" />
 
     </LinearLayout>
 
@@ -125,7 +140,7 @@
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="Hôm nay"
+                android:text="Tổng nhân viên"
                 android:textSize="12sp"
                 android:textColor="#757575" />
 

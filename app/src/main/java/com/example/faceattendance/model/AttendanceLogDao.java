@@ -28,15 +28,36 @@ public interface AttendanceLogDao {
     @Query("SELECT * FROM AttendanceLog WHERE employeeName LIKE '%' || :name || '%' ORDER BY timestamp DESC")
     List<AttendanceLog> searchByName(String name);
 
+    @Query("SELECT * FROM AttendanceLog WHERE employeeId LIKE '%' || :id || '%' ORDER BY timestamp DESC")
+    List<AttendanceLog> searchById(String id);
+
     @Query("SELECT * FROM AttendanceLog WHERE timestamp LIKE :date || '%' ORDER BY timestamp DESC")
     List<AttendanceLog> getLogsByDate(String date);
 
     @Query("SELECT * FROM AttendanceLog WHERE employeeName LIKE '%' || :name || '%' AND timestamp LIKE :date || '%' ORDER BY timestamp DESC")
     List<AttendanceLog> searchByNameAndDate(String name, String date);
 
+    @Query("SELECT * FROM AttendanceLog WHERE employeeId LIKE '%' || :id || '%' AND timestamp LIKE :date || '%' ORDER BY timestamp DESC")
+    List<AttendanceLog> searchByIdAndDate(String id, String date);
+
+    @Query("SELECT * FROM AttendanceLog WHERE (employeeName LIKE '%' || :search || '%' OR employeeId LIKE '%' || :search || '%') ORDER BY timestamp DESC")
+    List<AttendanceLog> searchByNameOrId(String search);
+
+    @Query("SELECT * FROM AttendanceLog WHERE (employeeName LIKE '%' || :search || '%' OR employeeId LIKE '%' || :search || '%') AND timestamp LIKE :date || '%' ORDER BY timestamp DESC")
+    List<AttendanceLog> searchByNameOrIdAndDate(String search, String date);
+
     @Query("SELECT COUNT(*) FROM AttendanceLog")
     int getTotalCount();
 
     @Query("SELECT COUNT(*) FROM AttendanceLog WHERE timestamp LIKE :date || '%'")
     int getCountByDate(String date);
+
+    @Query("SELECT COUNT(*) FROM AttendanceLog WHERE employeeName LIKE '%' || :name || '%'")
+    int getCountByName(String name);
+
+    @Query("SELECT COUNT(*) FROM AttendanceLog WHERE employeeId LIKE '%' || :id || '%'")
+    int getCountById(String id);
+
+    @Query("SELECT COUNT(*) FROM AttendanceLog WHERE (employeeName LIKE '%' || :search || '%' OR employeeId LIKE '%' || :search || '%')")
+    int getCountByNameOrId(String search);
 }

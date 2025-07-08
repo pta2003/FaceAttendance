@@ -2,12 +2,14 @@ package com.example.faceattendance;
 
 import android.app.DatePickerDialog;
 import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.DatePicker;
+import android.widget.ImageButton;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -28,8 +30,10 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public class AttendanceHistoryActivity extends AppCompatActivity {
 
@@ -38,6 +42,7 @@ public class AttendanceHistoryActivity extends AppCompatActivity {
     private FaceDatabase db;
 
     // UI components
+    private ImageButton btnBack;
     private TextInputEditText etSearchEmployee;
     private MaterialButton btnDateFilter;
     private TextView tvTotalRecords;
@@ -63,6 +68,7 @@ public class AttendanceHistoryActivity extends AppCompatActivity {
     }
 
     private void initViews() {
+        btnBack = findViewById(R.id.btnBack);
         recyclerView = findViewById(R.id.recyclerViewLogs);
         etSearchEmployee = findViewById(R.id.etSearchEmployee);
         btnDateFilter = findViewById(R.id.btnDateFilter);
@@ -99,6 +105,19 @@ public class AttendanceHistoryActivity extends AppCompatActivity {
     }
 
     private void setupListeners() {
+        // Back button listener
+        btnBack.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                // Quay lại trang AdminDashboardActivity
+                Intent intent = new Intent(AttendanceHistoryActivity.this, AdminDashboardActivity.class);
+                // Xóa các activity khác trong stack để tránh quay lại lịch sử
+                intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+                startActivity(intent);
+                finish();
+            }
+        });
+
         // Search listener
         etSearchEmployee.addTextChangedListener(new TextWatcher() {
             @Override
@@ -175,21 +194,35 @@ public class AttendanceHistoryActivity extends AppCompatActivity {
 
         filteredLogs.clear();
 
-        for (AttendanceLog log : allLogs) {
-            boolean matchesSearch = searchText.isEmpty() ||
-                    log.employeeName.toLowerCase().contains(searchText) ||
-                    log.employeeId.toLowerCase().contains(searchText) ||
-                    log.employeeId.contains(searchText); // Tìm kiếm chính xác cho số
+        // Nếu không có từ khóa tìm kiếm và không có ngày được chọn
+        if (searchText.isEmpty() && selectedDate.isEmpty()) {
+            filteredLogs.addAll(allLogs);
+        } else {
+            // Lọc theo điều kiện
+            for (AttendanceLog log : allLogs) {
+                boolean matchesSearch = true;
+                boolean matchesDate = true;
 
-            boolean matchesDate = selectedDate.isEmpty() ||
-                    log.timestamp.startsWith(selectedDate);
+                // Kiểm tra điều kiện tìm kiếm (nếu có từ khóa)
+                if (!searchText.isEmpty()) {
+                    matchesSearch = (log.employeeName != null && log.employeeName.toLowerCase().contains(searchText)) ||
+                            (log.employeeId != null && log.employeeId.toLowerCase().contains(searchText));
+                }
 
-            if (matchesSearch && matchesDate) {
-                filteredLogs.add(log);
+                // Kiểm tra điều kiện ngày (nếu có ngày được chọn)
+                if (!selectedDate.isEmpty()) {
+                    matchesDate = log.timestamp != null && log.timestamp.startsWith(selectedDate);
+                }
+
+                // Chỉ thêm vào danh sách nếu thỏa mãn cả hai điều kiện
+                if (matchesSearch && matchesDate) {
+                    filteredLogs.add(log);
+                }
             }
         }
 
         adapter.notifyDataSetChanged();
+        updateStats(); // Cập nhật thống kê sau khi filter
         updateUI();
     }
 
@@ -230,20 +263,18 @@ public class AttendanceHistoryActivity extends AppCompatActivity {
     }
 
     private void updateStats() {
-        // Update total records
-        tvTotalRecords.setText(String.valueOf(allLogs.size()));
+        // Cập nhật số bản ghi hiện tại (sau khi filter)
+        tvTotalRecords.setText(String.valueOf(filteredLogs.size()));
 
-        // Update today's records
-        String today = getTodayString();
-        int todayCount = 0;
-
-        for (AttendanceLog log : allLogs) {
-            if (log.timestamp.startsWith(today)) {
-                todayCount++;
+        // Đếm số nhân viên duy nhất trong danh sách đã lọc
+        Set<String> uniqueEmployees = new HashSet<>();
+        for (AttendanceLog log : filteredLogs) {
+            if (log.employeeId != null && !log.employeeId.isEmpty()) {
+                uniqueEmployees.add(log.employeeId);
             }
         }
 
-        tvTodayRecords.setText(String.valueOf(todayCount));
+        tvTodayRecords.setText(String.valueOf(uniqueEmployees.size()));
     }
 
     private void updateUI() {
@@ -276,5 +307,15 @@ public class AttendanceHistoryActivity extends AppCompatActivity {
         if (imm != null && getCurrentFocus() != null) {
             imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
         }
+    }
+
+    // Xử lý nút Back của hệ thống
+    @Override
+    public void onBackPressed() {
+        // Quay lại trang AdminDashboardActivity
+        Intent intent = new Intent(AttendanceHistoryActivity.this, AdminDashboardActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+        startActivity(intent);
+        finish();
     }
 }
