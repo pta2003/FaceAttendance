@@ -9,10 +9,11 @@ import android.provider.Settings;
 import androidx.room.Room;
 
 import com.example.faceattendance.model.FaceDatabase;
+import com.example.faceattendance.utils.PinManager;
 
 public class MainController {
     public static String DEVICE_ID;
-    private static final String ADMIN_PIN = "123456";
+    private static String ADMIN_PIN;
     private static final String PREFS_NAME = "AdminPrefs";
     private static final String KEY_UNLOCK_TIME = "unlock_time";
     private static final long LOCKOUT_DURATION = 1 * 60 * 1000; // 1 phút
@@ -20,6 +21,7 @@ public class MainController {
 
     private Context context;
     private FaceDatabase faceDatabase;
+    private PinManager pinManager;
 
     private int failedAttempts = 0;
     private boolean isLocked = false;
@@ -40,6 +42,7 @@ public class MainController {
     public MainController(Context context, MainControllerListener listener) {
         this.context = context;
         this.listener = listener;
+        this.pinManager = new PinManager(context);
         this.faceDatabase = Room.databaseBuilder(context.getApplicationContext(),
                         FaceDatabase.class, "face_attendance_db")
                 .fallbackToDestructiveMigration()
@@ -50,6 +53,8 @@ public class MainController {
         if (androidId != null && !androidId.isEmpty() && !androidId.equals("9774d56d682e549c")) {
             DEVICE_ID = "AID_" + androidId; // Thêm prefix để phân biệt
         }
+        ADMIN_PIN = pinManager.getAdminPin();
+
     }
 
     public void checkLockStatus() {

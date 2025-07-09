@@ -20,6 +20,7 @@ import com.example.faceattendance.model.Employee;
 import com.example.faceattendance.model.FaceDatabase;
 import com.example.faceattendance.mqtt.MqttCallbackListener;
 import com.example.faceattendance.mqtt.MqttManager;
+import com.example.faceattendance.utils.PinManager;
 
 import org.json.JSONObject;
 
@@ -29,11 +30,12 @@ import java.util.Locale;
 
 public class EmployeeDetailController {
     private static final String TAG = "EmployeeDetailController";
-    private static final String ADMIN_PIN = "123456";
+    private static String ADMIN_PIN ;
     private static final String PREFS_NAME = "AdminPrefs";
     private static final String KEY_UNLOCK_TIME = "unlock_time";
 
     private Context context;
+    private PinManager pinManager;
     private FaceDatabase db;
     private EmployeeDetailView view;
     private Employee currentEmployee;
@@ -73,6 +75,8 @@ public class EmployeeDetailController {
     public EmployeeDetailController(Context context, EmployeeDetailView view) {
         this.context = context;
         this.view = view;
+        this.pinManager = new PinManager(context);
+        ADMIN_PIN = pinManager.getAdminPin();
         setupDatabase();
     }
 

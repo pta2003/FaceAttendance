@@ -76,6 +76,18 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:text="Lịch sử chấm công"
+            android:layout_marginBottom="16dp"
+            android:textSize="16sp"
+            android:padding="16dp"
+            android:backgroundTint="#2196F3"
+            android:textColor="#FFFFFF"
+            android:elevation="2dp" />
+
+        <Button
+            android:id="@+id/btnChangePin"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Thay đổi mã Pin"
             android:textSize="16sp"
             android:padding="16dp"
             android:backgroundTint="#2196F3"

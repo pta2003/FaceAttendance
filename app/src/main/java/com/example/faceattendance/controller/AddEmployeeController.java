@@ -15,6 +15,7 @@ import com.example.faceattendance.mqtt.MqttCallbackListener;
 import com.example.faceattendance.mqtt.MqttManager;
 import com.example.faceattendance.utils.FaceRecognitionHelper;
 import com.example.faceattendance.utils.LivenessDetector;
+import com.example.faceattendance.utils.PinManager;
 import com.google.mlkit.vision.face.Face;
 
 import org.json.JSONObject;
@@ -26,11 +27,13 @@ import java.util.Locale;
 
 public class AddEmployeeController {
     private static final String TAG = "AddEmployeeController";
-    private static final String ADMIN_PIN = "123456";
+    private static String ADMIN_PIN;
     private static final String PREFS_NAME = "AdminPrefs";
     private static final String KEY_UNLOCK_TIME = "unlock_time";
 
     private Context context;
+
+    private PinManager pinManager;
     private AddEmployeeView view;
     private FaceRecognitionHelper faceRecognitionHelper;
     private LivenessDetector livenessDetector;
@@ -60,6 +63,8 @@ public class AddEmployeeController {
     public AddEmployeeController(Context context, AddEmployeeView view) {
         this.context = context;
         this.view = view;
+        this.pinManager = new PinManager(context);
+        ADMIN_PIN = pinManager.getAdminPin();
         initializeComponents();
     }
 
